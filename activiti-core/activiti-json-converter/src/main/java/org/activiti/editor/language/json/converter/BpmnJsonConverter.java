@@ -1,15 +1,19 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.activiti.editor.language.json.converter;
 
 import java.text.DateFormat;
@@ -505,7 +509,7 @@ public class BpmnJsonConverter implements EditorJsonConstants,
         Class<? extends BaseBpmnJsonConverter> converter = convertersToJsonMap.get(flowElement.getClass());
         if (converter != null) {
             try {
-                BaseBpmnJsonConverter converterInstance = converter.newInstance();
+                BaseBpmnJsonConverter converterInstance = converter.getDeclaredConstructor().newInstance();
                 if (converterInstance instanceof FormKeyAwareConverter) {
                     ((FormKeyAwareConverter) converterInstance).setFormKeyMap(formKeyMap);
                 }
@@ -538,7 +542,7 @@ public class BpmnJsonConverter implements EditorJsonConstants,
             Class<? extends BaseBpmnJsonConverter> converter = convertersToJsonMap.get(artifact.getClass());
             if (converter != null) {
                 try {
-                    converter.newInstance().convertToJson(artifact,
+                    converter.getDeclaredConstructor().newInstance().convertToJson(artifact,
                                                           this,
                                                           model,
                                                           container,
@@ -839,7 +843,7 @@ public class BpmnJsonConverter implements EditorJsonConstants,
             String stencilId = BpmnJsonConverterUtil.getStencilId(shapeNode);
             Class<? extends BaseBpmnJsonConverter> converter = convertersToBpmnMap.get(stencilId);
             try {
-                BaseBpmnJsonConverter converterInstance = converter.newInstance();
+                BaseBpmnJsonConverter converterInstance = converter.getDeclaredConstructor().newInstance();
                 if (converterInstance instanceof DecisionTableAwareConverter) {
                     ((DecisionTableAwareConverter) converterInstance).setDecisionTableMap(decisionTableMap);
                 }

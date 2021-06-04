@@ -1,8 +1,11 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -10,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 
 package org.activiti.engine.impl.persistence.entity;
 
@@ -469,7 +473,7 @@ public class ExecutionEntityImpl extends VariableScopeImpl implements ExecutionE
   }
 
   protected void ensureRootProcessInstanceInitialized() {
-    if (rootProcessInstanceId == null) {
+    if (rootProcessInstance == null) {
       rootProcessInstance = (ExecutionEntityImpl) Context.getCommandContext().getExecutionEntityManager().findById(rootProcessInstanceId);
     }
   }
@@ -555,17 +559,14 @@ public class ExecutionEntityImpl extends VariableScopeImpl implements ExecutionE
 
   @Override
   protected void updateVariableInstance(VariableInstanceEntity variableInstance, Object value, ExecutionEntity sourceActivityExecution) {
-    super.updateVariableInstance(variableInstance, value, sourceActivityExecution);
+      Object previousValue = variableInstance.getValue();
+      super.updateVariableInstance(variableInstance, value, sourceActivityExecution);
 
-    // Dispatch event, if needed
-    if (Context.getProcessEngineConfiguration() != null && Context.getProcessEngineConfiguration().getEventDispatcher().isEnabled()) {
-      Context
-          .getProcessEngineConfiguration()
-          .getEventDispatcher()
-          .dispatchEvent(
-              ActivitiEventBuilder.createVariableEvent(ActivitiEventType.VARIABLE_UPDATED, variableInstance.getName(), value, variableInstance.getType(), variableInstance.getTaskId(),
-                  variableInstance.getExecutionId(), getProcessInstanceId(), getProcessDefinitionId()));
-    }
+      // Dispatch event, if needed
+      if (Context.getProcessEngineConfiguration() != null && Context.getProcessEngineConfiguration().getEventDispatcher().isEnabled()) {
+          Context.getProcessEngineConfiguration().getEventDispatcher().dispatchEvent(
+              ActivitiEventBuilder.createVariableUpdateEvent(variableInstance, previousValue, getProcessInstanceId(), getProcessDefinitionId()));
+      }
   }
 
   @Override

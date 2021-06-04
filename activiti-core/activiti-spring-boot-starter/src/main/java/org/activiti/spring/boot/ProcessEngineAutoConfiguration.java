@@ -1,8 +1,11 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -10,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 
 package org.activiti.spring.boot;
 
@@ -23,6 +27,7 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.activiti.api.process.model.events.ApplicationDeployedEvent;
 import org.activiti.api.process.model.events.ProcessDeployedEvent;
 import org.activiti.api.process.model.events.StartMessageDeployedEvent;
 import org.activiti.api.process.runtime.events.listener.ProcessRuntimeEventListener;
@@ -34,8 +39,10 @@ import org.activiti.engine.cfg.ProcessEngineConfigurator;
 import org.activiti.engine.impl.event.EventSubscriptionPayloadMappingProvider;
 import org.activiti.engine.impl.persistence.StrongUuidGenerator;
 import org.activiti.runtime.api.event.impl.StartMessageSubscriptionConverter;
-import org.activiti.runtime.api.impl.VariablesMappingProvider;
+import org.activiti.runtime.api.impl.ExtensionsVariablesMappingProvider;
+import org.activiti.runtime.api.model.impl.APIDeploymentConverter;
 import org.activiti.runtime.api.model.impl.APIProcessDefinitionConverter;
+import org.activiti.spring.ApplicationDeployedEventProducer;
 import org.activiti.spring.ProcessDeployedEventProducer;
 import org.activiti.spring.SpringAsyncExecutor;
 import org.activiti.spring.SpringProcessEngineConfiguration;
@@ -226,7 +233,8 @@ public class ProcessEngineAutoConfiguration extends AbstractProcessEngineAutoCon
 
     @Bean(name = BEHAVIOR_FACTORY_MAPPING_CONFIGURER)
     @ConditionalOnMissingBean(name = BEHAVIOR_FACTORY_MAPPING_CONFIGURER)
-    public DefaultActivityBehaviorFactoryMappingConfigurer defaultActivityBehaviorFactoryMappingConfigurer(VariablesMappingProvider variablesMappingProvider,
+    public DefaultActivityBehaviorFactoryMappingConfigurer defaultActivityBehaviorFactoryMappingConfigurer(
+        ExtensionsVariablesMappingProvider variablesMappingProvider,
                                                                                                            ProcessVariablesInitiator processVariablesInitiator,
                                                                                                            EventSubscriptionPayloadMappingProvider eventSubscriptionPayloadMappingProvider) {
         return new DefaultActivityBehaviorFactoryMappingConfigurer(variablesMappingProvider,
@@ -263,5 +271,17 @@ public class ProcessEngineAutoConfiguration extends AbstractProcessEngineAutoCon
         };
     }
 
-}
+    @Bean
+    @ConditionalOnMissingBean
+    public ApplicationDeployedEventProducer applicationDeployedEventProducer(RepositoryService repositoryService,
+            APIDeploymentConverter converter,
+            @Autowired(required = false) List<ProcessRuntimeEventListener<ApplicationDeployedEvent>> listeners,
+            ApplicationEventPublisher eventPublisher) {
+         return new ApplicationDeployedEventProducer(repositoryService,
+                converter,
+                Optional.ofNullable(listeners)
+                        .orElse(emptyList()),
+                eventPublisher);
+    }
 
+}

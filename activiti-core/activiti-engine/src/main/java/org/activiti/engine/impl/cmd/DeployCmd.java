@@ -1,8 +1,11 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -10,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.activiti.engine.impl.cmd;
 
 import java.io.Serializable;
@@ -50,10 +54,10 @@ public class DeployCmd<T> implements Command<Deployment>, Serializable {
 
     deployment.setDeploymentTime(commandContext.getProcessEngineConfiguration().getClock().getCurrentTime());
 
-      setProjectReleaseVersion(deployment);
-      deployment.setVersion(1);
+    setProjectReleaseVersion(deployment);
+    deployment.setVersion(1);
 
-      if (deploymentBuilder.isDuplicateFilterEnabled()) {
+    if (deploymentBuilder.isDuplicateFilterEnabled()) {
 
       List<Deployment> existingDeployments = new ArrayList<Deployment>();
       if (deployment.getTenantId() == null || ProcessEngineConfiguration.NO_TENANT_ID.equals(deployment.getTenantId())) {

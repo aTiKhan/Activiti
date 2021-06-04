@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -65,6 +65,8 @@ public interface ProcessDiagramGenerator {
      * @param bpmnModel bpmn model to get diagram for
      * @param highLightedActivities activities to highlight
      * @param highLightedFlows flows to highlight
+     * @param currentActivities current activities to highlight
+     * @param erroredActivities errored activities to highlight
      * @param activityFontName override the default activity font
      * @param labelFontName override the default label font
      * @param generateDefaultDiagram true if a default diagram should be generated if there is no graphic info available
@@ -73,6 +75,8 @@ public interface ProcessDiagramGenerator {
     InputStream generateDiagram(BpmnModel bpmnModel,
                                 List<String> highLightedActivities,
                                 List<String> highLightedFlows,
+                                List<String> currentActivities,
+                                List<String> erroredActivities,
                                 String activityFontName,
                                 String labelFontName,
                                 String annotationFontName,

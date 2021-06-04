@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.activiti.engine.impl.util.json;
 
 /*
@@ -28,7 +43,7 @@ import java.util.Iterator;
 
 /**
  * Convert a web browser cookie list string to a JSONObject and back.
- * 
+ *
 
  * @version 2008-09-18
  */
@@ -37,9 +52,9 @@ public class CookieList {
   /**
    * Convert a cookie list into a JSONObject. A cookie list is a sequence of name/value pairs. The names are separated from the values by '='. The pairs are separated by ';'. The names and the values
    * will be unescaped, possibly converting '+' and '%' sequences.
-   * 
+   *
    * To add a cookie to a cooklist, cookielistJSONObject.put(cookieJSONObject.getString("name"), cookieJSONObject.getString("value"));
-   * 
+   *
    * @param string
    *          A cookie list string
    * @return A JSONObject
@@ -60,7 +75,7 @@ public class CookieList {
   /**
    * Convert a JSONObject into a cookie list. A cookie list is a sequence of name/value pairs. The names are separated from the values by '='. The pairs are separated by ';'. The characters '%', '+',
    * '=', and ';' in the names and values are replaced by "%hh".
-   * 
+   *
    * @param o
    *          A JSONObject
    * @return A cookie list string

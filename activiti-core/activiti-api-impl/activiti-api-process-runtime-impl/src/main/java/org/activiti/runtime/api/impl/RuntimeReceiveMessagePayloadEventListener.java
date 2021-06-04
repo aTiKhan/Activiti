@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.activiti.runtime.api.impl;
 
 import org.activiti.api.process.model.payloads.ReceiveMessagePayload;
@@ -30,16 +29,16 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Default implementation of SignalPayloadEventListener that delegates 
- * Spring SignalPayload event into embedded RuntimeService.  
- * 
+ * Default implementation of SignalPayloadEventListener that delegates
+ * Spring SignalPayload event into embedded RuntimeService.
+ *
  */
 public class RuntimeReceiveMessagePayloadEventListener implements ReceiveMessagePayloadEventListener {
-    
+
     private final RuntimeService runtimeService;
 
     private final ManagementService managementService;
-    
+
     public RuntimeReceiveMessagePayloadEventListener(RuntimeService runtimeService,
                                                      ManagementService managementService) {
         this.runtimeService = runtimeService;
@@ -50,13 +49,13 @@ public class RuntimeReceiveMessagePayloadEventListener implements ReceiveMessage
     public void receiveMessage(ReceiveMessagePayload messagePayload) {
         String messageName = messagePayload.getName();
         String correlationKey = messagePayload.getCorrelationKey();
-                
+
         EventSubscriptionEntity subscription = managementService.executeCommand(new FindMessageEventSubscription(messageName,
                                                                                                                  correlationKey));
         if (subscription != null && Objects.equals(correlationKey, subscription.getConfiguration())) {
             Map<String, Object> variables = messagePayload.getVariables();
             String executionId = subscription.getExecutionId();
-            
+
             runtimeService.messageEventReceived(messageName,
                                                 executionId,
                                                 variables);
@@ -64,7 +63,7 @@ public class RuntimeReceiveMessagePayloadEventListener implements ReceiveMessage
             throw new ActivitiObjectNotFoundException("Message subscription name '" + messageName + "' with correlation key '" + correlationKey + "' not found.");
         }
     }
-    
+
     static class FindMessageEventSubscription implements Command<EventSubscriptionEntity> {
 
         private final String messageName;

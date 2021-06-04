@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.activiti.spring.conformance.util;
 
 import org.activiti.api.model.shared.event.RuntimeEvent;
@@ -46,7 +61,7 @@ import java.util.List;
 public class RuntimeTestConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuntimeTestConfiguration.class);
-    
+
     public static List<RuntimeEvent> collectedEvents = new ArrayList<>();
 
     @Bean
@@ -104,7 +119,7 @@ public class RuntimeTestConfiguration {
 
         return extendedInMemoryUserDetailsManager;
     }
-    
+
     @Bean
     public BPMNElementEventListener<BPMNActivityStartedEvent> bpmnActivityStartedListener() {
         return bpmnActivityStartedEvent -> collectedEvents.add(bpmnActivityStartedEvent);
@@ -196,13 +211,13 @@ public class RuntimeTestConfiguration {
     public TaskEventListener<TaskAssignedEvent> taskAssignedEventListener() {
         return taskAssignedEvent -> collectedEvents.add(taskAssignedEvent);
     }
-    
+
     @Bean
     public TaskEventListener<TaskCancelledEvent> taskCancelledEventListener() {
         return taskCancelledEvent -> collectedEvents.add(taskCancelledEvent);
     }
-    
-    
+
+
     @Bean
     public BPMNElementEventListener<BPMNSignalReceivedEvent> bpmnSignalReceivedListener() {
         return bpmnSignalReceivedEvent -> collectedEvents.add(bpmnSignalReceivedEvent);

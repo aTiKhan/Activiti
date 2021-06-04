@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.activiti.api.task.runtime;
 
 import java.util.List;
@@ -84,7 +83,7 @@ public interface TaskAdminRuntime {
      * - This method return a shallow Task object with the basic information needed to validate that the task was completed
      */
     Task complete(CompleteTaskPayload completeTaskPayload);
-    
+
     /**
      * Updates details of a task
      */
@@ -100,14 +99,14 @@ public interface TaskAdminRuntime {
      *  - after the assign the task should be in assigned status
      */
     Task assign(AssignTaskPayload assignTaskPayload);
-    
+
     void addCandidateUsers(CandidateUsersPayload candidateUsersPayload);
     void deleteCandidateUsers(CandidateUsersPayload candidateUsersPayload);
-    
+
     void addCandidateGroups(CandidateGroupsPayload candidateGroupsPayload);
     void deleteCandidateGroups(CandidateGroupsPayload candidateGroupsPayload);
-    
+
     List<String> userCandidates(String taskId);
     List<String> groupCandidates(String taskId);
-    
+
 }

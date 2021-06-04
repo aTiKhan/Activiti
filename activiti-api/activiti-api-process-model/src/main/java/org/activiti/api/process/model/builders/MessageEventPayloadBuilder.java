@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.activiti.api.process.model.builders;
 
 import java.util.LinkedHashMap;
@@ -71,13 +70,13 @@ public class MessageEventPayloadBuilder {
 
         return this;
     }
-    
+
     public MessageEventPayloadBuilder withBusinessKey(String businessKey) {
         this.businessKey = businessKey;
 
         return this;
     }
-    
+
 
     public MessageEventPayload build() {
         return new MessageEventPayload(name,
@@ -115,9 +114,9 @@ public class MessageEventPayloadBuilder {
         if (getClass() != obj.getClass())
             return false;
         MessageEventPayloadBuilder other = (MessageEventPayloadBuilder) obj;
-        return Objects.equals(correlationKey, other.correlationKey) 
-                && Objects.equals(businessKey, other.businessKey) 
-                && Objects.equals(name, other.name) 
+        return Objects.equals(correlationKey, other.correlationKey)
+                && Objects.equals(businessKey, other.businessKey)
+                && Objects.equals(name, other.name)
                 && Objects.equals(variables, other.variables);
     }
 }

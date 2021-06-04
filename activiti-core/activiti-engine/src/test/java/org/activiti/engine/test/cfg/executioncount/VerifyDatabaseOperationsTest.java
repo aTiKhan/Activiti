@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.activiti.engine.test.cfg.executioncount;
 import java.util.List;
 import java.util.Map;
@@ -237,7 +252,8 @@ public class VerifyDatabaseOperationsTest extends PluggableActivitiTestCase {
         "selectIdentityLinksByTask", 1L,
         "selectVariablesByTaskId", 1L,
         "selectExecutionsWithSameRootProcessInstanceId", 1L,
-        "selectTasksByExecutionId", 1L
+        "selectTasksByExecutionId", 1L,
+        "selectVariablesByExecutionId", 1L
         );
     assertDatabaseInserts("CompleteTaskCmd",
         "HistoricActivityInstanceEntityImpl", 1L);
@@ -310,7 +326,7 @@ public class VerifyDatabaseOperationsTest extends PluggableActivitiTestCase {
       String dbDelete = (String) expectedDeletes[i];
       Long count = (Long) expectedDeletes[i+1];
 
-      assertThat(stats.getDbDeletes().get("org.activiti.engine.impl.persistence.entity." + dbDelete)).as("Delete count count for " + dbDelete + "not correct").isEqualTo(count);
+      assertThat(stats.getDbDeletes().get("org.activiti.engine.impl.persistence.entity." + dbDelete)).as("Delete count for " + dbDelete + "not correct").isEqualTo(count);
     }
   }
 

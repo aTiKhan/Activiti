@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@ public class ReceiveMessagePayload implements Payload {
 
     private final String id;
     private String name;
-    private String correlationKey; 
+    private String correlationKey;
     private Map<String, Object> variables = new LinkedHashMap<>();
 
     public ReceiveMessagePayload() {
@@ -53,7 +53,7 @@ public class ReceiveMessagePayload implements Payload {
     public String getName() {
         return name;
     }
-    
+
     public String getCorrelationKey() {
         return correlationKey;
     }
@@ -61,7 +61,7 @@ public class ReceiveMessagePayload implements Payload {
     public Map<String, Object> getVariables() {
         return variables;
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id, name, correlationKey, variables);
@@ -76,9 +76,9 @@ public class ReceiveMessagePayload implements Payload {
         if (getClass() != obj.getClass())
             return false;
         ReceiveMessagePayload other = (ReceiveMessagePayload) obj;
-        return Objects.equals(correlationKey, other.correlationKey) 
-                && Objects.equals(id, other.id) 
-                && Objects.equals(name, other.name) 
+        return Objects.equals(correlationKey, other.correlationKey)
+                && Objects.equals(id, other.id)
+                && Objects.equals(name, other.name)
                 && Objects.equals(variables, other.variables);
     }
 

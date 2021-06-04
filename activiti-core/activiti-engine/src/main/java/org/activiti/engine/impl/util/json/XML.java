@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.activiti.engine.impl.util.json;
 
 /*
@@ -28,7 +43,7 @@ import java.util.Iterator;
 
 /**
  * This provides static methods to convert an XML text into a JSONObject, and to covert a JSONObject into an XML text.
- * 
+ *
 
  * @version 2009-12-12
  */
@@ -63,14 +78,14 @@ public class XML {
 
   /**
    * Replace special characters with XML escapes:
-   * 
+   *
    * <pre>
    * &amp; <small>(ampersand)</small> is replaced by &amp;amp;
    * &lt; <small>(less than)</small> is replaced by &amp;lt;
    * &gt; <small>(greater than)</small> is replaced by &amp;gt;
    * &quot; <small>(double quote)</small> is replaced by &amp;quot;
    * </pre>
-   * 
+   *
    * @param string
    *          The string to be escaped.
    * @return The escaped string.
@@ -101,7 +116,7 @@ public class XML {
 
   /**
    * Throw an exception if the string contains whitespace. Whitespace is not allowed in tagNames and attributes.
-   * 
+   *
    * @param string
    * @throws JSONException
    */
@@ -119,7 +134,7 @@ public class XML {
 
   /**
    * Scan the content following the named tag, attaching it to the context.
-   * 
+   *
    * @param x
    *          The XMLTokener containing the source string.
    * @param context
@@ -288,7 +303,7 @@ public class XML {
    * format. XML uses elements, attributes, and content text, while JSON uses unordered collections of name/value pairs and arrays of values. JSON does not does not like to distinguish between
    * elements and attributes. Sequences of similar elements are represented as JSONArrays. Content text may be placed in a "content" member. Comments, prologs, DTDs, and <code>&lt;[ [ ]]></code> are
    * ignored.
-   * 
+   *
    * @param string
    *          The source string.
    * @return A JSONObject containing the structured signalData from the XML string.
@@ -305,7 +320,7 @@ public class XML {
 
   /**
    * Convert a JSONObject into a well-formed, element-normal XML string.
-   * 
+   *
    * @param o
    *          A JSONObject.
    * @return A string.
@@ -317,7 +332,7 @@ public class XML {
 
   /**
    * Convert a JSONObject into a well-formed, element-normal XML string.
-   * 
+   *
    * @param o
    *          A JSONObject.
    * @param tagName

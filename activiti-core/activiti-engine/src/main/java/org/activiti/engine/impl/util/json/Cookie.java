@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.activiti.engine.impl.util.json;
 
 /*
@@ -26,7 +41,7 @@ package org.activiti.engine.impl.util.json;
 
 /**
  * Convert a web browser cookie specification to a JSONObject and back. JSON and Cookies are both notations for name/value pairs.
- * 
+ *
 
  * @version 2008-09-18
  */
@@ -36,7 +51,7 @@ public class Cookie {
    * Produce a copy of a string in which the characters '+', '%', '=', ';' and control characters are replaced with "%hh". This is a gentle form of URL encoding, attempting to cause as little
    * distortion to the string as possible. The characters '=' and ';' are meta characters in cookies. By convention, they are escaped using the URL-encoding. This is only a convention, not a standard.
    * Often, cookies are expected to have encoded values. We encode '=' and ';' because we must. We encode '%' and '+' because they are meta characters in URL encoding.
-   * 
+   *
    * @param string
    *          The source string.
    * @return The escaped result.
@@ -63,7 +78,7 @@ public class Cookie {
    * Convert a cookie specification string into a JSONObject. The string will contain a name value pair separated by '='. The name and the value will be unescaped, possibly converting '+' and '%'
    * sequences. The cookie properties may follow, separated by ';', also represented as name=value (except the secure property, which does not have a value). The name will be stored under the key
    * "name", and the value will be stored under the key "value". This method does not do checking or validation of the parameters. It only converts the cookie string into a JSONObject.
-   * 
+   *
    * @param string
    *          The cookie specification string.
    * @return A JSONObject containing "name", "value", and possibly other members.
@@ -98,7 +113,7 @@ public class Cookie {
   /**
    * Convert a JSONObject into a cookie specification string. The JSONObject must contain "name" and "value" members. If the JSONObject contains "expires", "domain", "path", or "secure" members, they
    * will be appended to the cookie specification string. All other members are ignored.
-   * 
+   *
    * @param o
    *          A JSONObject
    * @return A cookie specification string
@@ -130,7 +145,7 @@ public class Cookie {
 
   /**
    * Convert <code>%</code><i>hh</i> sequences to single characters, and convert plus to space.
-   * 
+   *
    * @param s
    *          A string that may contain <code>+</code> &nbsp;<small>(plus)</small> and <code>%</code><i>hh</i> sequences.
    * @return The unescaped string.

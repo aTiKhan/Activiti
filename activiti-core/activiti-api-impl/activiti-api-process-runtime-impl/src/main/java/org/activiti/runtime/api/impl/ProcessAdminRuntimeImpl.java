@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.activiti.runtime.api.impl;
 
 import java.util.List;
 import java.util.Map;
-
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.activiti.api.process.model.ProcessDefinition;
 import org.activiti.api.process.model.ProcessInstance;
 import org.activiti.api.process.model.builders.ProcessPayloadBuilder;
@@ -83,11 +83,12 @@ public class ProcessAdminRuntimeImpl implements ProcessAdminRuntime {
         org.activiti.engine.repository.ProcessDefinition processDefinition;
         // try searching by Key if there is no matching by Id
         List<org.activiti.engine.repository.ProcessDefinition> list = repositoryService
-                .createProcessDefinitionQuery()
-                .processDefinitionKey(processDefinitionId)
-                .orderByProcessDefinitionVersion()
-                .asc()
-                .list();
+            .createProcessDefinitionQuery()
+            .processDefinitionKey(processDefinitionId)
+            .deploymentIds(latestDeploymentIds())
+            .orderByProcessDefinitionVersion()
+            .asc()
+            .list();
         if (!list.isEmpty()) {
             processDefinition = list.get(0);
         } else {
@@ -96,25 +97,34 @@ public class ProcessAdminRuntimeImpl implements ProcessAdminRuntime {
         return processDefinitionConverter.from(processDefinition);
     }
 
+    private Set<String> latestDeploymentIds() {
+        return repositoryService.createDeploymentQuery()
+            .latestVersion()
+            .list()
+            .stream()
+            .map(org.activiti.engine.repository.Deployment::getId)
+            .collect(Collectors.toSet());
+    }
+
     @Override
     public Page<ProcessDefinition> processDefinitions(Pageable pageable) {
         return processDefinitions(pageable,
-                ProcessPayloadBuilder.processDefinitions().build());
+            ProcessPayloadBuilder.processDefinitions().build());
     }
 
     @Override
     public Page<ProcessDefinition> processDefinitions(Pageable pageable,
-                                                      GetProcessDefinitionsPayload getProcessDefinitionsPayload) {
+        GetProcessDefinitionsPayload getProcessDefinitionsPayload) {
         if (getProcessDefinitionsPayload == null) {
             throw new IllegalStateException("payload cannot be null");
         }
         ProcessDefinitionQuery processDefinitionQuery = repositoryService
-                .createProcessDefinitionQuery();
+            .createProcessDefinitionQuery();
         if (getProcessDefinitionsPayload.hasDefinitionKeys()) {
             processDefinitionQuery.processDefinitionKeys(getProcessDefinitionsPayload.getProcessDefinitionKeys());
         }
         return new PageImpl<>(processDefinitionConverter.from(processDefinitionQuery.list()),
-                Math.toIntExact(processDefinitionQuery.count()));
+            Math.toIntExact(processDefinitionQuery.count()));
     }
 
     @Override

@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.activiti.api.runtime.model.impl;
 
 import java.util.Date;
@@ -22,7 +21,7 @@ import java.util.Objects;
 import org.activiti.api.process.model.StartMessageSubscription;
 
 public class StartMessageSubscriptionImpl implements StartMessageSubscription {
-    
+
     private String id;
     private String eventName;
     private String processDefinitionId;
@@ -41,27 +40,27 @@ public class StartMessageSubscriptionImpl implements StartMessageSubscription {
 
     StartMessageSubscriptionImpl() {
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public String getEventName() {
         return eventName;
     }
-    
+
     public String getProcessDefinitionId() {
         return processDefinitionId;
     }
-    
+
     public String getConfiguration() {
         return configuration;
     }
-    
+
     public String getActivityId() {
         return activityId;
     }
-    
+
     public Date getCreated() {
         return created;
     }
@@ -89,11 +88,11 @@ public class StartMessageSubscriptionImpl implements StartMessageSubscription {
             return false;
         }
         StartMessageSubscriptionImpl other = (StartMessageSubscriptionImpl) obj;
-        return Objects.equals(activityId, other.activityId) && 
-                Objects.equals(configuration, other.configuration) && 
-                Objects.equals(created, other.created) && 
-                Objects.equals(eventName, other.eventName) && 
-                Objects.equals(id, other.id) && 
+        return Objects.equals(activityId, other.activityId) &&
+                Objects.equals(configuration, other.configuration) &&
+                Objects.equals(created, other.created) &&
+                Objects.equals(eventName, other.eventName) &&
+                Objects.equals(id, other.id) &&
                 Objects.equals(processDefinitionId, other.processDefinitionId);
     }
 
@@ -123,7 +122,7 @@ public class StartMessageSubscriptionImpl implements StartMessageSubscription {
     public static Builder builder() {
         return new Builder();
     }
-    
+
     /**
      * Creates a builder to build {@link StartMessageSubscriptionImpl} and initialize it with the given object.
      * @param startMessageSubscriptionImpl to initialize the builder with

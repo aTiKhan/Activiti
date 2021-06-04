@@ -1,11 +1,11 @@
 /*
- * Copyright 2019 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.activiti.spring.boot.tasks;
 
 import static java.util.Arrays.asList;
@@ -24,10 +23,12 @@ import static org.awaitility.Awaitility.await;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.activiti.api.model.shared.event.RuntimeEvent;
 import org.activiti.api.model.shared.model.VariableInstance;
 import org.activiti.api.process.model.ProcessInstance;
+import org.activiti.api.process.model.builders.ProcessPayloadBuilder;
 import org.activiti.api.process.model.events.BPMNActivityCancelledEvent;
 import org.activiti.api.process.model.events.BPMNActivityCompletedEvent;
 import org.activiti.api.process.model.events.BPMNActivityEvent;
@@ -45,10 +46,6 @@ import org.activiti.engine.ProcessEngineConfiguration;
 import org.activiti.spring.boot.process.ProcessBaseRuntime;
 import org.activiti.spring.boot.process.ProcessRuntimeBPMNTimerIT;
 import org.activiti.spring.boot.process.TimerTestConfigurator;
-import org.activiti.spring.boot.process.listener.DummyBPMNTimerCancelledListener;
-import org.activiti.spring.boot.process.listener.DummyBPMNTimerExecutedListener;
-import org.activiti.spring.boot.process.listener.DummyBPMNTimerFiredListener;
-import org.activiti.spring.boot.process.listener.DummyBPMNTimerScheduledListener;
 import org.activiti.spring.boot.security.util.SecurityUtil;
 import org.activiti.spring.boot.test.util.ProcessCleanUpUtil;
 import org.activiti.test.LocalEventSource;
@@ -57,16 +54,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles(ProcessRuntimeBPMNTimerIT.PROCESS_RUNTIME_BPMN_TIMER_IT)
-@Import({TimerTestConfigurator.class,
-        DummyBPMNTimerFiredListener.class,
-        DummyBPMNTimerScheduledListener.class,
-        DummyBPMNTimerCancelledListener.class,
-        DummyBPMNTimerExecutedListener.class})
 public class TaskRuntimeMultiInstanceIT {
 
     @Autowired
@@ -90,6 +80,7 @@ public class TaskRuntimeMultiInstanceIT {
     @BeforeEach
     public void setUp() {
         localEventSource.clearEvents();
+        securityUtil.logInAs("user");
     }
 
     @AfterEach
@@ -1447,21 +1438,70 @@ public class TaskRuntimeMultiInstanceIT {
 
     @Test
     public void parallelMultiInstance_should_collectOutputValues() {
-        ProcessInstance processInstance = processBaseRuntime.startProcessWithProcessDefinitionKey("miParallelUserTasksOutputCollection");
-        List<Task> tasks = taskBaseRuntime.getTasks(processInstance);
-        assertThat(tasks).hasSize(2);
+        //given
+        ProcessInstance processInstance = processBaseRuntime.getProcessRuntime().start(
+            ProcessPayloadBuilder
+                .start()
+                .withProcessDefinitionKey("miParallelUserTasksOutputCollection")
+                .withVariable("approved", false)
+                .build());
 
-        taskBaseRuntime.completeTask(tasks.get(0), singletonMap("meal", "pizza"));
-        taskBaseRuntime.completeTask(tasks.get(1), singletonMap("meal", "pasta"));
+        //`approved` is `false`, so it will loop again on the multi instance
+        completeMultiInstanceWith(processInstance, "pizza pineapple", "pasta with chicken");
 
+        //`approved` is `true`, so it will not loop again on the multi instance
+        processBaseRuntime.getProcessRuntime().setVariables(
+            ProcessPayloadBuilder
+                .setVariables(processInstance)
+                .withVariable("approved", true)
+                .build());
+
+        completeMultiInstanceWith(processInstance, "pizza", "pasta");
+
+        //when
         List<VariableInstance> variables = processBaseRuntime.getVariables(processInstance);
 
+        //then
+        //the result collection should not keep the history of the previous results
+        //only the latest one should be taken into account
         assertThat(variables)
             .extracting(VariableInstance::getName,
                 VariableInstance::getValue)
             .contains(
                 tuple("meals",
                     asList("pizza", "pasta")));
+    }
+
+    private void completeMultiInstanceWith(ProcessInstance processInstance, String mealForFirstTask,
+        String mealForSecondTask) {
+        List<Task> tasks = taskBaseRuntime.getTasks(processInstance);
+        assertThat(tasks).hasSize(2);
+
+        taskBaseRuntime.completeTask(tasks.get(0), singletonMap("meal", mealForFirstTask));
+        taskBaseRuntime.completeTask(tasks.get(1), singletonMap("meal", mealForSecondTask));
+    }
+
+    @Test
+    public void parallelMultiInstance_should_collectAllTaskVariables_when_noOutputDataItem() {
+        //given
+        ProcessInstance processInstance = processBaseRuntime.startProcessWithProcessDefinitionKey("miParallelUserTasksAllOutputCollection");
+        List<Task> tasks = taskBaseRuntime.getTasks(processInstance);
+        assertThat(tasks).hasSize(2);
+        taskBaseRuntime.completeTask(tasks.get(0), Map.of("meal", "pizza", "size", "small"));
+        taskBaseRuntime.completeTask(tasks.get(1), Map.of("meal", "pasta", "size", "medium"));
+
+
+        //when
+        List<VariableInstance> variables = processBaseRuntime.getVariables(processInstance);
+
+        //then
+        assertThat(variables)
+            .extracting(VariableInstance::getName, VariableInstance::getValue)
+            .contains(
+                tuple("miResult",
+                    asList(
+                        Map.of("meal", "pizza", "size", "small"),
+                        Map.of("meal", "pasta", "size", "medium"))));
     }
 
     @Test
@@ -1482,5 +1522,70 @@ public class TaskRuntimeMultiInstanceIT {
             .extracting(VariableInstance::getName, VariableInstance::getValue)
             .contains(tuple("meals", asList("pizza", "pasta")));
     }
+
+    @Test
+    public void sequentialMultiInstance_should_collectAllTaskVariables_when_noOutputDataItem() {
+        ProcessInstance processInstance = processBaseRuntime.startProcessWithProcessDefinitionKey("miSequentialUserTasksAllOutputCollection");
+
+        List<Task> tasks = taskBaseRuntime.getTasks(processInstance);
+        assertThat(tasks).hasSize(1);
+        taskBaseRuntime.completeTask(tasks.get(0), Map.of("meal", "pizza", "size", "small"));
+
+        tasks = taskBaseRuntime.getTasks(processInstance);
+        assertThat(tasks).hasSize(1);
+        taskBaseRuntime.completeTask(tasks.get(0), Map.of("meal", "pasta", "size", "medium"));
+
+        List<VariableInstance> variables = processBaseRuntime.getVariables(processInstance);
+
+        assertThat(variables)
+            .extracting(VariableInstance::getName, VariableInstance::getValue)
+            .contains(tuple("miResult",
+                asList(
+                    Map.of("meal", "pizza", "size", "small"),
+                    Map.of("meal", "pasta", "size", "medium"))));
+    }
+
+    @Test
+    public void parallelMultiInstance_should_collectOutputValuesForServiceTask() {
+        //given
+        ProcessInstance processInstance = processBaseRuntime
+            .startProcessWithProcessDefinitionKey("multi-instance-service-task-result-collection-data-item");
+
+        //when
+        List<VariableInstance> variables = processBaseRuntime
+            .getProcessVariablesByProcessId(processInstance.getId());
+
+        //then
+        assertThat(variables)
+            .extracting(VariableInstance::getName)
+            .contains("meals");
+        VariableInstance meals = variables
+            .stream()
+            .filter(variableInstance -> "meals".equals(variableInstance.getName()))
+            .findFirst()
+            .orElse(null);
+        List<String> mealValues = meals.getValue();
+        assertThat(mealValues).containsExactlyInAnyOrder("pizza", "pasta");
+    }
+
+    @Test
+    public void parallelMultiInstance_should_collectAllOutputValuesForServiceTask_when_noDataItem() {
+        //given
+        ProcessInstance processInstance = processBaseRuntime
+            .startProcessWithProcessDefinitionKey("multi-instance-service-task-result-collection-all");
+
+        //when
+        List<VariableInstance> variables = processBaseRuntime
+            .getProcessVariablesByProcessId(processInstance.getId());
+
+        //then
+        assertThat(variables)
+            .extracting(VariableInstance::getName, VariableInstance::getValue)
+            .contains(tuple("miResult",
+                asList(
+                    Map.of("meal", "pizza", "size", "small"),
+                    Map.of("meal", "pasta", "size", "medium"))));
+    }
+
 
 }

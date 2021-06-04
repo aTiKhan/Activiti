@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Alfresco, Inc. and/or its affiliates.
+ * Copyright 2010-2020 Alfresco Software, Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.activiti.core.common.spring.security.config;
 
 import org.activiti.api.runtime.shared.security.PrincipalGroupsProvider;
@@ -44,10 +43,10 @@ public class ActivitiSpringSecurityAutoConfiguration {
     public GrantedAuthoritiesResolver grantedAuthoritiesResolver() {
         return new SimpleGrantedAuthoritiesResolver();
     }
-    
+
     @Bean
     @ConditionalOnMissingBean
-    public GrantedAuthoritiesGroupsMapper grantedAuthoritiesGroupsMapper() { 
+    public GrantedAuthoritiesGroupsMapper grantedAuthoritiesGroupsMapper() {
         return new SimpleGrantedAuthoritiesGroupsMapper();
     };
 
@@ -56,24 +55,24 @@ public class ActivitiSpringSecurityAutoConfiguration {
     public GrantedAuthoritiesRolesMapper grantedAuthoritiesRolesMapper() {
         return new SimpleGrantedAuthoritiesRolesMapper();
     }
-    
+
     @Bean
     @ConditionalOnMissingBean
     public SecurityContextPrincipalProvider securityContextPrincipalProvider() {
         return new LocalSpringSecurityContextPrincipalProvider();
-    }    
-    
+    }
+
     @Bean
     @ConditionalOnMissingBean
     public PrincipalIdentityProvider principalIdentityProvider() {
         return new AuthenticationPrincipalIdentityProvider();
-    }    
+    }
 
     @Bean
     @ConditionalOnMissingBean
     public PrincipalGroupsProvider principalGroupsProvider(GrantedAuthoritiesResolver grantedAuthoritiesResolver,
                                                            GrantedAuthoritiesGroupsMapper grantedAuthoritiesGroupsMapper) {
-        return new AuthenticationPrincipalGroupsProvider(grantedAuthoritiesResolver, 
+        return new AuthenticationPrincipalGroupsProvider(grantedAuthoritiesResolver,
                                                          grantedAuthoritiesGroupsMapper);
     }
 
@@ -81,10 +80,10 @@ public class ActivitiSpringSecurityAutoConfiguration {
     @ConditionalOnMissingBean
     public PrincipalRolesProvider principalRolessProvider(GrantedAuthoritiesResolver grantedAuthoritiesResolver,
                                                           GrantedAuthoritiesRolesMapper grantedAuthoritiesRolesMapper) {
-        return new AuthenticationPrincipalRolesProvider(grantedAuthoritiesResolver, 
+        return new AuthenticationPrincipalRolesProvider(grantedAuthoritiesResolver,
                                                         grantedAuthoritiesRolesMapper);
     }
-    
+
     @Bean
     @ConditionalOnMissingBean
     public SecurityManager securityManager(SecurityContextPrincipalProvider securityContextPrincipalProvider,

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.activiti.engine.impl.util;
 
 import java.text.SimpleDateFormat;
@@ -30,25 +45,25 @@ public class TimerUtil {
 
   /**
    * The event definition on which the timer is based.
-   * 
+   *
    * Takes in an optional execution, if missing the {@link NoExecutionVariableScope} will be used (eg Timer start event)
    */
-  public static TimerJobEntity createTimerEntityForTimerEventDefinition(TimerEventDefinition timerEventDefinition, boolean isInterruptingTimer, 
+  public static TimerJobEntity createTimerEntityForTimerEventDefinition(TimerEventDefinition timerEventDefinition, boolean isInterruptingTimer,
       ExecutionEntity executionEntity, String jobHandlerType, String jobHandlerConfig) {
 
     ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
-    
+
     String businessCalendarRef = null;
     Expression expression = null;
     ExpressionManager expressionManager = processEngineConfiguration.getExpressionManager();
-    
+
     // ACT-1415: timer-declaration on start-event may contain expressions NOT
     // evaluating variables but other context, evaluating should happen nevertheless
     VariableScope scopeForExpression = executionEntity;
     if (scopeForExpression == null) {
       scopeForExpression = NoExecutionVariableScope.getSharedInstance();
     }
-    
+
     if (StringUtils.isNotEmpty(timerEventDefinition.getTimeDate())) {
 
       businessCalendarRef = DueDateBusinessCalendar.NAME;
@@ -64,7 +79,7 @@ public class TimerUtil {
       businessCalendarRef = DurationBusinessCalendar.NAME;
       expression = expressionManager.createExpression(timerEventDefinition.getTimeDuration());
     }
-    
+
     if (StringUtils.isNotEmpty(timerEventDefinition.getCalendarName())) {
       businessCalendarRef = timerEventDefinition.getCalendarName();
       Expression businessCalendarExpression = expressionManager.createExpression(businessCalendarRef);
@@ -79,23 +94,23 @@ public class TimerUtil {
 
     String dueDateString = null;
     Date duedate = null;
-    
+
     Object dueDateValue = expression.getValue(scopeForExpression);
     if (dueDateValue instanceof String) {
       dueDateString = (String) dueDateValue;
-      
+
     } else if (dueDateValue instanceof Date) {
       duedate = (Date) dueDateValue;
-      
+
     } else if (dueDateValue instanceof DateTime) {
       //JodaTime support
       duedate = ((DateTime) dueDateValue).toDate();
-      
+
     } else if (dueDateValue != null) {
       throw new ActivitiException("Timer '" + executionEntity.getActivityId()
           + "' was not configured with a valid duration/time, either hand in a java.util.Date or a String in format 'yyyy-MM-dd'T'hh:mm:ss'");
     }
-    
+
     if (duedate == null && dueDateString != null) {
       duedate = businessCalendar.resolveDuedate(dueDateString);
     }

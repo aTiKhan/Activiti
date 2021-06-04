@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.activiti.engine.impl.util.json;
 
 /*
@@ -28,7 +43,7 @@ import java.util.Iterator;
 
 /**
  * Convert an HTTP header to a JSONObject and back.
- * 
+ *
 
  * @version 2008-09-18
  */
@@ -39,7 +54,7 @@ public class HTTP {
 
   /**
    * Convert an HTTP header string into a JSONObject. It can be a request header or a response header. A request header will contain
-   * 
+   *
    * <pre>
    * {
    *    Method: "POST" (for example),
@@ -47,9 +62,9 @@ public class HTTP {
    *    "HTTP-Version": "HTTP/1.1" (for example)
    * }
    * </pre>
-   * 
+   *
    * A response header will contain
-   * 
+   *
    * <pre>
    * {
    *    "HTTP-Version": "HTTP/1.1" (for example),
@@ -57,17 +72,17 @@ public class HTTP {
    *    "Reason-Phrase": "OK" (for example)
    * }
    * </pre>
-   * 
+   *
    * In addition, the other parameters in the header will be captured, using the HTTP field names as JSON names, so that
-   * 
+   *
    * <pre>
    *    Date: Sun, 26 May 2002 18:06:04 GMT
    *    Cookie: Q=q2=PPEAsg--; B=677gi6ouf29bn&b=2&f=s
    *    Cache-Control: no-cache
    * </pre>
-   * 
+   *
    * become
-   * 
+   *
    * <pre>
    * {...
    *    Date: "Sun, 26 May 2002 18:06:04 GMT",
@@ -75,9 +90,9 @@ public class HTTP {
    *    "Cache-Control": "no-cache",
    * ...}
    * </pre>
-   * 
+   *
    * It does no further checking or conversion. It does not parse dates. It does not do '%' transforms on URLs.
-   * 
+   *
    * @param string
    *          An HTTP header string.
    * @return A JSONObject containing the elements and attributes of the XML string.
@@ -120,7 +135,7 @@ public class HTTP {
 
   /**
    * Convert a JSONObject into an HTTP header. A request header must contain
-   * 
+   *
    * <pre>
    * {
    *    Method: "POST" (for example),
@@ -128,9 +143,9 @@ public class HTTP {
    *    "HTTP-Version": "HTTP/1.1" (for example)
    * }
    * </pre>
-   * 
+   *
    * A response header must contain
-   * 
+   *
    * <pre>
    * {
    *    "HTTP-Version": "HTTP/1.1" (for example),
@@ -138,9 +153,9 @@ public class HTTP {
    *    "Reason-Phrase": "OK" (for example)
    * }
    * </pre>
-   * 
+   *
    * Any other members of the JSONObject will be output as HTTP fields. The result will end with two CRLF pairs.
-   * 
+   *
    * @param o
    *          A JSONObject
    * @return An HTTP header string.

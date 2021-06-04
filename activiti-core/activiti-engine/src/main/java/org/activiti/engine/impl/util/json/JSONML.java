@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Alfresco Software, Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.activiti.engine.impl.util.json;
 
 /*
@@ -28,7 +43,7 @@ import java.util.Iterator;
 
 /**
  * This provides static methods to convert an XML text into a JSONArray or JSONObject, and to covert a JSONArray or JSONObject into an XML text using the JsonML transform.
- * 
+ *
 
  * @version 2010-02-12
  */
@@ -36,7 +51,7 @@ public class JSONML {
 
   /**
    * Parse XML values and store them in a JSONArray.
-   * 
+   *
    * @param x
    *          The XMLTokener containing the source string.
    * @param arrayForm
@@ -225,7 +240,7 @@ public class JSONML {
    * Convert a well-formed (but not necessarily valid) XML string into a JSONArray using the JsonML transform. Each XML tag is represented as a JSONArray in which the first element is the tag name. If
    * the tag has attributes, then the second element will be JSONObject containing the name/value pairs. If the tag contains children, then strings and JSONArrays will represent the child tags.
    * Comments, prologs, DTDs, and <code>&lt;[ [ ]]></code> are ignored.
-   * 
+   *
    * @param string
    *          The source string.
    * @return A JSONArray containing the structured signalData from the XML string.
@@ -239,7 +254,7 @@ public class JSONML {
    * Convert a well-formed (but not necessarily valid) XML string into a JSONArray using the JsonML transform. Each XML tag is represented as a JSONArray in which the first element is the tag name. If
    * the tag has attributes, then the second element will be JSONObject containing the name/value pairs. If the tag contains children, then strings and JSONArrays will represent the child content and
    * tags. Comments, prologs, DTDs, and <code>&lt;[ [ ]]></code> are ignored.
-   * 
+   *
    * @param x
    *          An XMLTokener.
    * @return A JSONArray containing the structured signalData from the XML string.
@@ -253,9 +268,9 @@ public class JSONML {
    * Convert a well-formed (but not necessarily valid) XML string into a JSONObject using the JsonML transform. Each XML tag is represented as a JSONObject with a "tagName" property. If the tag has
    * attributes, then the attributes will be in the JSONObject as properties. If the tag contains children, the object will have a "childNodes" property which will be an array of strings and JsonML
    * JSONObjects.
-   * 
+   *
    * Comments, prologs, DTDs, and <code>&lt;[ [ ]]></code> are ignored.
-   * 
+   *
    * @param x
    *          An XMLTokener of the XML source text.
    * @return A JSONObject containing the structured signalData from the XML string.
@@ -269,9 +284,9 @@ public class JSONML {
    * Convert a well-formed (but not necessarily valid) XML string into a JSONObject using the JsonML transform. Each XML tag is represented as a JSONObject with a "tagName" property. If the tag has
    * attributes, then the attributes will be in the JSONObject as properties. If the tag contains children, the object will have a "childNodes" property which will be an array of strings and JsonML
    * JSONObjects.
-   * 
+   *
    * Comments, prologs, DTDs, and <code>&lt;[ [ ]]></code> are ignored.
-   * 
+   *
    * @param string
    *          The XML source text.
    * @return A JSONObject containing the structured signalData from the XML string.
@@ -283,7 +298,7 @@ public class JSONML {
 
   /**
    * Reverse the JSONML transformation, making an XML text from a JSONArray.
-   * 
+   *
    * @param ja
    *          A JSONArray.
    * @return An XML string.
@@ -365,7 +380,7 @@ public class JSONML {
   /**
    * Reverse the JSONML transformation, making an XML text from a JSONObject. The JSONObject must contain a "tagName" property. If it has children, then it must have a "childNodes" property containing
    * an array of objects. The other properties are attributes with string values.
-   * 
+   *
    * @param jo
    *          A JSONObject.
    * @return An XML string.
