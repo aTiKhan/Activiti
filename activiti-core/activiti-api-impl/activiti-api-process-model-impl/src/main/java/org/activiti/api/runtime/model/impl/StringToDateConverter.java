@@ -15,8 +15,14 @@
  */
 package org.activiti.api.runtime.model.impl;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.springframework.core.convert.converter.Converter;
 
@@ -25,6 +31,10 @@ public class StringToDateConverter implements Converter<String, Date> {
 
     @Override
     public Date convert(String source) {
-        return Date.from(Instant.parse(source));
+        if (source.endsWith("Z")) {
+            return Date.from(Instant.parse(source));
+        } else {
+            return Date.from(OffsetDateTime.parse(source).toInstant());
+        }
     }
 }

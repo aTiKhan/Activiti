@@ -13,25 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.activiti.core.el;
 
 import java.lang.reflect.Method;
-
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import javax.el.FunctionMapper;
 
 /**
  * Default implementation of a {@link FunctionMapper}.
- *
+ * <p>
  * A non-null implementation is required by the javax.el.* classes, hence the reason for this pretty useless class.
- *
-
  */
 public class ActivitiFunctionMapper extends FunctionMapper {
 
-  public Method resolveFunction(String prefix, String localName) {
-    return null;
-  }
+    Map<String, Method> map = Collections.emptyMap();
 
+    public Method resolveFunction(String prefix, String localName) {
+        return map.get(prefix + ":" + localName);
+    }
+
+    public void setFunction(String prefix, String localName, Method method) {
+        if (map.isEmpty()) {
+            map = new HashMap<String, Method>();
+        }
+        map.put(prefix + ":" + localName, method);
+    }
 }

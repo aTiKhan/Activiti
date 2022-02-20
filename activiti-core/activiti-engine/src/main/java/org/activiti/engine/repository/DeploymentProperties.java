@@ -20,6 +20,4 @@ import org.activiti.engine.api.internal.Internal;
 
 @Internal
 public interface DeploymentProperties {
-
-
 }

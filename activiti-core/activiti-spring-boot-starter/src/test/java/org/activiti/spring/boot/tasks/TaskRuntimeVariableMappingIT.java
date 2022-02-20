@@ -15,8 +15,10 @@
  */
 package org.activiti.spring.boot.tasks;
 
+import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -27,6 +29,7 @@ import org.activiti.api.process.model.ProcessInstance;
 import org.activiti.api.task.model.Task;
 import org.activiti.common.util.DateFormatterProvider;
 import org.activiti.spring.boot.process.ProcessBaseRuntime;
+import org.activiti.spring.boot.security.util.SecurityUtil;
 import org.activiti.spring.boot.test.util.ProcessCleanUpUtil;
 import org.activiti.spring.boot.test.util.TaskCleanUpUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +51,9 @@ public class TaskRuntimeVariableMappingIT {
     private static final String TASK_MAP_ALL_OUTPUTS = "taskVariableMappingSendAllOutputs";
 
     private static final String TASK_MAP_ALL_PREVALENCE = "taskVariableMappingSendAllPrevalence";
+
+    @Autowired
+    private SecurityUtil securityUtil;
 
     @Autowired
     private TaskBaseRuntime taskBaseRuntime;
@@ -458,5 +464,126 @@ public class TaskRuntimeVariableMappingIT {
         assertThat(tasks).isNotEmpty();
         assertThat(tasks).hasSize(1);
         return tasks.get(0);
+    }
+
+    @Test
+    public void should_supportVariableMappingAfterLoopingBack() {
+        //given
+        final ProcessInstance processInstance = processBaseRuntime.startProcessWithProcessDefinitionKey("Process_N4qkN051N");
+        List<Task> tasks = taskBaseRuntime.getTasksByProcessInstanceId(processInstance.getId());
+        assertThat(tasks)
+            .extracting(Task::getName)
+            .containsExactly("Enter values");
+
+        //when the task completes with a variable value causing a loop back
+        taskBaseRuntime.completeTask(tasks.get(0), singletonMap("formInput", "provided-it1"));
+
+        //then process loops back to the first task
+        waitForTaskOnProcessInstance(processInstance, "Enter values");
+        List<VariableInstance> variables = processBaseRuntime.getVariables(processInstance);
+        assertThat(variables)
+            .extracting(
+                VariableInstance::getName,
+                VariableInstance::getValue
+            ).containsExactly(
+                tuple("providedValue", "provided-it1")
+            );
+
+        //when the task completes with a variable value not causing a loop back
+        tasks = taskBaseRuntime.getTasksByProcessInstanceId(
+            processInstance.getId());
+        taskBaseRuntime.completeTask(tasks.get(0),
+            singletonMap("formInput", "go"));
+
+        //then the process reaches the next task
+        waitForTaskOnProcessInstance(processInstance, "Wait");
+        variables = processBaseRuntime.getVariables(processInstance);
+        assertThat(variables)
+            .extracting(
+                VariableInstance::getName,
+                VariableInstance::getValue
+            ).containsExactly(
+                tuple("providedValue", "go")
+            );
+
+    }
+
+    private void waitForTaskOnProcessInstance(ProcessInstance processInstance, String taskName) {
+        await().untilAsserted(() -> {
+            securityUtil.logInAs("user");
+            assertThat(taskBaseRuntime.getTasksByProcessInstanceId(processInstance.getId()))
+                .extracting(Task::getName)
+                .containsExactly(taskName);
+        });
+    }
+
+    @Test
+    public void mapping_should_workProperlyAfterChainingUserAndServiceTasks() {
+        //given
+        final ProcessInstance processInstance = processBaseRuntime.startProcessWithProcessDefinitionKey("Process_at2zjUes");
+        List<Task> tasks = taskBaseRuntime.getTasksByProcessInstanceId(processInstance.getId());
+        assertThat(tasks)
+            .extracting(Task::getName)
+            .containsExactly("Input Task");
+
+        //when
+        taskBaseRuntime.completeTask(tasks.get(0), singletonMap("inputText", "From input task"));
+
+        //then the process has executed the service task as well and reached the next user task
+        waitForTaskOnProcessInstance(processInstance, "Output Task");
+
+        //the process variable is updated with the output of the service task
+        List<VariableInstance> variables = processBaseRuntime.getVariables(processInstance);
+        assertThat(variables)
+            .extracting(
+                VariableInstance::getName,
+                VariableInstance::getValue
+            ).containsExactly(
+                tuple("stringVar", "From output connector")
+            );
+
+        //the task variables are updated based on the input mapping
+        tasks = taskBaseRuntime.getTasksByProcessInstanceId(processInstance.getId());
+        final List<VariableInstance> taskVariables = taskBaseRuntime.getTasksVariablesByTaskId(
+            tasks.get(0).getId());
+        assertThat(taskVariables)
+            .extracting(VariableInstance::getName, VariableInstance::getValue)
+            .containsExactly(tuple("outputText", "From output connector"));
+
+    }
+
+    @Test
+    public void mapping_should_workProperlyAfterChainingUserAndCallActivities() {
+        //given
+        final ProcessInstance processInstance = processBaseRuntime.startProcessWithProcessDefinitionKey("Process_1wyjgrj");
+        List<Task> tasks = taskBaseRuntime.getTasksByProcessInstanceId(processInstance.getId());
+        assertThat(tasks)
+            .extracting(Task::getName)
+            .containsExactly("Input Task");
+
+        //when
+        taskBaseRuntime.completeTask(tasks.get(0), singletonMap("inputText", "From input task"));
+
+        //then the process has executed the call activity as well and reached the next user task
+        waitForTaskOnProcessInstance(processInstance, "Output Task");
+
+        //the process variable is updated with the output of the call activity
+        List<VariableInstance> variables = processBaseRuntime.getVariables(processInstance);
+        assertThat(variables)
+            .extracting(
+                VariableInstance::getName,
+                VariableInstance::getValue
+            ).containsExactly(
+                tuple("stringVar", "From child")
+            );
+
+        //the task variables are updated based on the input mapping
+        tasks = taskBaseRuntime.getTasksByProcessInstanceId(processInstance.getId());
+        final List<VariableInstance> taskVariables = taskBaseRuntime.getTasksVariablesByTaskId(
+            tasks.get(0).getId());
+        assertThat(taskVariables)
+            .extracting(VariableInstance::getName, VariableInstance::getValue)
+            .containsExactly(tuple("outputText", "From child"));
+
     }
 }

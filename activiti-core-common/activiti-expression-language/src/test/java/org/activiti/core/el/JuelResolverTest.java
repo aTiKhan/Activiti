@@ -17,9 +17,15 @@ package org.activiti.core.el;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import javax.el.ELException;
 import javax.el.PropertyNotFoundException;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class JuelResolverTest {
@@ -89,5 +95,44 @@ public class JuelResolverTest {
             .as("Referencing an unknown variable")
             .isThrownBy(() -> expressionResolver.resolveExpression(expressionString, availableVariables, Object.class))
             .withMessage("Cannot resolve identifier 'nameeee'");
+    }
+
+    @Test
+    public void should_returnDate_when_expressionIsNowFunction() {
+        //given
+        String expressionString = "${now()}";
+        ExpressionResolver expressionResolver = new JuelExpressionResolver();
+
+        //when
+        Date value = expressionResolver.resolveExpression(expressionString, Collections.emptyMap(), Date.class);
+
+        //then
+        MatcherAssert.assertThat(value, is(notNullValue()));
+    }
+
+    @Test
+    public void should_throwException_when_unknownFunctionIsReferenced() {
+        //given
+        String expressionString = "${current()}";
+        ExpressionResolver expressionResolver = new JuelExpressionResolver();
+
+        //then
+        assertThatExceptionOfType(ELException.class)
+            .as("Referencing an unknown function")
+            .isThrownBy(() -> expressionResolver.resolveExpression(expressionString, Collections.emptyMap(), Date.class))
+            .withMessage("Could not resolve function 'current'");
+    }
+
+    @Test
+    public void should_returnList_when_expressionIsListFunction() {
+        //given
+        String expressionString = "${list(1,'item',3)}";
+        ExpressionResolver expressionResolver = new JuelExpressionResolver();
+
+        //when
+        List result = expressionResolver.resolveExpression(expressionString, Collections.emptyMap(), List.class);
+
+        //then
+        assertThat(result).contains(1l, "item", 3l);
     }
 }
