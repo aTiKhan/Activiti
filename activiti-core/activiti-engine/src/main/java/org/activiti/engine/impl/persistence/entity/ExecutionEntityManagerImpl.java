@@ -25,9 +25,13 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.activiti.bpmn.model.HasExecutionListeners;
+import org.activiti.bpmn.model.Process;
 import org.activiti.bpmn.model.SequenceFlow;
 import org.activiti.bpmn.model.UserTask;
 import org.activiti.engine.ActivitiObjectNotFoundException;
+import org.activiti.engine.delegate.ExecutionListener;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.ActivitiProcessCancelledEvent;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
@@ -41,6 +45,8 @@ import org.activiti.engine.impl.identity.Authentication;
 import org.activiti.engine.impl.persistence.CountingExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.data.DataManager;
 import org.activiti.engine.impl.persistence.entity.data.ExecutionDataManager;
+import org.activiti.engine.impl.util.CollectionUtil;
+import org.activiti.engine.impl.util.ProcessDefinitionUtil;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.runtime.Execution;
 import org.activiti.engine.runtime.ProcessInstance;
@@ -297,6 +303,15 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
     return childExecution;
   }
 
+  private String getStartUserId(ExecutionEntity executionEntity) {
+    return Optional.ofNullable(executionEntity)
+      .map(ExecutionEntity::getStartUserId)
+      .or(() -> Optional.ofNullable(executionEntity)
+         .map(ExecutionEntity::getParent)
+         .map(this::getStartUserId))
+      .orElse(null);
+  }
+
   @Override
   public ExecutionEntity createSubprocessInstance(ProcessDefinition processDefinition, ExecutionEntity superExecutionEntity, String businessKey) {
     ExecutionEntity subProcessInstance = executionDataManager.create();
@@ -309,12 +324,17 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
     subProcessInstance.setSuperExecution(superExecutionEntity);
     subProcessInstance.setRootProcessInstanceId(superExecutionEntity.getRootProcessInstanceId());
     subProcessInstance.setScope(true); // process instance is always a scope for all child executions
-    subProcessInstance.setStartUserId(Authentication.getAuthenticatedUserId());
     subProcessInstance.setBusinessKey(businessKey);
     subProcessInstance.setAppVersion(processDefinition.getAppVersion());
+    String authenticatedUserId = Optional.ofNullable(Authentication.getAuthenticatedUserId()).orElseGet(() -> getStartUserId(superExecutionEntity));
+    subProcessInstance.setStartUserId(authenticatedUserId);
 
     // Store in database
     insert(subProcessInstance, false);
+
+    if (authenticatedUserId != null) {
+      getIdentityLinkEntityManager().addIdentityLink(subProcessInstance, authenticatedUserId, null, IdentityLinkType.STARTER);
+    }
 
     if (logger.isDebugEnabled()) {
       logger.debug("Child execution {} created with super execution {}", subProcessInstance, superExecutionEntity.getId());
@@ -414,6 +434,14 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
       return;
     }
 
+      // Execute execution listeners for process end.
+      Process process = ProcessDefinitionUtil.getProcess(processInstanceExecutionEntity.getProcessDefinitionId());
+      if (CollectionUtil.isNotEmpty(process.getExecutionListeners())) {
+          executeExecutionListeners(process,
+              processInstanceExecutionEntity,
+              ExecutionListener.EVENTNAME_END);
+      }
+
     List<ExecutionEntity> childExecutions = collectChildren(execution.getProcessInstance());
     for (int i=childExecutions.size()-1; i>=0; i--) {
       ExecutionEntity childExecutionEntity = childExecutions.get(i);
@@ -437,6 +465,16 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
                 .createProcessCancelledEvent(processInstance, deleteReason);
             getEventDispatcher().dispatchEvent(processCancelledEvent);
         }
+    }
+
+    /**
+     * Executes the execution listeners defined on the given element, with the given event type,
+     * and passing the provided execution to the {@link ExecutionListener} instances.
+     */
+    protected void executeExecutionListeners(HasExecutionListeners elementWithExecutionListeners,
+                                             ExecutionEntity executionEntity, String eventType) {
+        getProcessEngineConfiguration().getListenerNotificationHelper()
+            .executeExecutionListeners(elementWithExecutionListeners, executionEntity, eventType);
     }
 
     @Override
@@ -718,6 +756,9 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
 
   private void deleteDataForExecution(ExecutionEntity executionEntity, String deleteReason) {
       deleteExecutionEntity(executionEntity,deleteReason);
+      if (deleteReason!=null && deleteReason.startsWith(DeleteReason.TERMINATE_END_EVENT)) {
+          deleteChildExecutions(executionEntity, deleteReason);
+      }
       deleteUserTask(executionEntity, deleteReason);
   }
 

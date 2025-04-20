@@ -19,12 +19,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.activiti.api.model.shared.model.VariableInstance;
 import org.activiti.api.process.model.ProcessDefinition;
 import org.activiti.api.process.model.ProcessInstance;
 import org.activiti.api.process.model.builders.ProcessPayloadBuilder;
 import org.activiti.api.process.model.payloads.DeleteProcessPayload;
 import org.activiti.api.process.model.payloads.GetProcessDefinitionsPayload;
 import org.activiti.api.process.model.payloads.GetProcessInstancesPayload;
+import org.activiti.api.process.model.payloads.GetVariablesPayload;
 import org.activiti.api.process.model.payloads.ReceiveMessagePayload;
 import org.activiti.api.process.model.payloads.RemoveProcessVariablesPayload;
 import org.activiti.api.process.model.payloads.ResumeProcessPayload;
@@ -39,17 +42,19 @@ import org.activiti.api.runtime.model.impl.ProcessInstanceImpl;
 import org.activiti.api.runtime.shared.NotFoundException;
 import org.activiti.api.runtime.shared.query.Page;
 import org.activiti.api.runtime.shared.query.Pageable;
+import org.activiti.engine.ActivitiObjectNotFoundException;
 import org.activiti.engine.RepositoryService;
 import org.activiti.engine.RuntimeService;
 import org.activiti.engine.repository.ProcessDefinitionQuery;
 import org.activiti.runtime.api.model.impl.APIProcessDefinitionConverter;
 import org.activiti.runtime.api.model.impl.APIProcessInstanceConverter;
+import org.activiti.runtime.api.model.impl.APIVariableInstanceConverter;
 import org.activiti.runtime.api.query.impl.PageImpl;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
-@PreAuthorize("hasRole('ACTIVITI_ADMIN')")
+@PreAuthorize("hasAnyRole('ACTIVITI_ADMIN','APPLICATION_MANAGER')")
 public class ProcessAdminRuntimeImpl implements ProcessAdminRuntime {
 
     private final RepositoryService repositoryService;
@@ -60,6 +65,8 @@ public class ProcessAdminRuntimeImpl implements ProcessAdminRuntime {
 
     private final APIProcessInstanceConverter processInstanceConverter;
 
+    private final APIVariableInstanceConverter variableInstanceConverter;
+
     private final ApplicationEventPublisher eventPublisher;
 
     private final ProcessVariablesPayloadValidator processVariablesValidator;
@@ -68,32 +75,32 @@ public class ProcessAdminRuntimeImpl implements ProcessAdminRuntime {
                                    APIProcessDefinitionConverter processDefinitionConverter,
                                    RuntimeService runtimeService,
                                    APIProcessInstanceConverter processInstanceConverter,
+                                   APIVariableInstanceConverter variableInstanceConverter,
                                    ApplicationEventPublisher eventPublisher,
                                    ProcessVariablesPayloadValidator processVariablesValidator) {
         this.repositoryService = repositoryService;
         this.processDefinitionConverter = processDefinitionConverter;
         this.runtimeService = runtimeService;
         this.processInstanceConverter = processInstanceConverter;
+        this.variableInstanceConverter = variableInstanceConverter;
         this.eventPublisher = eventPublisher;
         this.processVariablesValidator = processVariablesValidator;
     }
 
     @Override
     public ProcessDefinition processDefinition(String processDefinitionId) {
-        org.activiti.engine.repository.ProcessDefinition processDefinition;
-        // try searching by Key if there is no matching by Id
-        List<org.activiti.engine.repository.ProcessDefinition> list = repositoryService
+        org.activiti.engine.repository.ProcessDefinition processDefinition = repositoryService
             .createProcessDefinitionQuery()
-            .processDefinitionKey(processDefinitionId)
+            .processDefinitionIdOrKey(processDefinitionId)
             .deploymentIds(latestDeploymentIds())
             .orderByProcessDefinitionVersion()
             .asc()
-            .list();
-        if (!list.isEmpty()) {
-            processDefinition = list.get(0);
-        } else {
-            processDefinition = repositoryService.getProcessDefinition(processDefinitionId);
-        }
+            .list()
+            .stream()
+            .findFirst()
+            .orElseThrow(() ->
+                new ActivitiObjectNotFoundException("Unable to find process definition for the given id or key:'" + processDefinitionId + "'"));
+
         return processDefinitionConverter.from(processDefinition);
     }
 
@@ -123,7 +130,7 @@ public class ProcessAdminRuntimeImpl implements ProcessAdminRuntime {
         if (getProcessDefinitionsPayload.hasDefinitionKeys()) {
             processDefinitionQuery.processDefinitionKeys(getProcessDefinitionsPayload.getProcessDefinitionKeys());
         }
-        return new PageImpl<>(processDefinitionConverter.from(processDefinitionQuery.list()),
+        return new PageImpl<>(processDefinitionConverter.from(processDefinitionQuery.listPage(pageable.getStartIndex(), pageable.getMaxItems())),
             Math.toIntExact(processDefinitionQuery.count()));
     }
 
@@ -259,6 +266,16 @@ public class ProcessAdminRuntimeImpl implements ProcessAdminRuntime {
         runtimeService.setVariables(setProcessVariablesPayload.getProcessInstanceId(),
                 setProcessVariablesPayload.getVariables());
 
+    }
+
+    @Override
+    public List<VariableInstance> variables(GetVariablesPayload getVariablesPayload) {
+        processInstance(getVariablesPayload.getProcessInstanceId());
+
+        Map<String, org.activiti.engine.impl.persistence.entity.VariableInstance> variables;
+        variables = runtimeService.getVariableInstances(getVariablesPayload.getProcessInstanceId());
+
+        return variableInstanceConverter.from(variables.values());
     }
 
     @Override

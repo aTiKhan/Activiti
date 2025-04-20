@@ -15,6 +15,7 @@
  */
 package org.activiti.engine.repository;
 
+import java.util.List;
 import java.util.Set;
 
 import org.activiti.engine.ActivitiIllegalArgumentException;
@@ -90,6 +91,11 @@ public interface ProcessDefinitionQuery extends Query<ProcessDefinitionQuery, Pr
     ProcessDefinitionQuery processDefinitionKeyLike(String processDefinitionKeyLike);
 
     /**
+     * Selects process definitions with id or key equals to processDefinitionIdOrKey
+     */
+    ProcessDefinitionQuery processDefinitionIdOrKey(String processDefinitionIdOrKey);
+
+    /**
      * Only select process definition with a certain version. Particulary useful when used in combination with {@link #processDefinitionKey(String)}
      */
     ProcessDefinitionQuery processDefinitionVersion(Integer processDefinitionVersion);
@@ -135,9 +141,15 @@ public interface ProcessDefinitionQuery extends Query<ProcessDefinitionQuery, Pr
     ProcessDefinitionQuery processDefinitionResourceNameLike(String resourceNameLike);
 
     /**
-     * Only selects process definitions which given userId is authoriezed to start
+     * Only selects process definitions which given userId is authorized to start
      */
     ProcessDefinitionQuery startableByUser(String userId);
+
+    /**
+     * Only selects process definitions which given group members are authorized to start
+     * If not set and startableByUser is set, the groups of that user will be used
+     */
+    ProcessDefinitionQuery startableByGroups(List<String> groupIds);
 
     /**
      * Only selects process definitions which are suspended

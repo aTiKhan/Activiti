@@ -16,11 +16,13 @@
 package org.activiti.spring;
 
 import static java.util.Arrays.asList;
+import static org.activiti.api.process.model.events.ApplicationEvent.ApplicationEvents.APPLICATION_DEPLOYED;
+import static org.activiti.api.process.model.events.ApplicationEvent.ApplicationEvents.APPLICATION_ROLLBACK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import org.activiti.api.process.model.events.ApplicationDeployedEvent;
@@ -32,10 +34,13 @@ import org.activiti.engine.repository.DeploymentQuery;
 import org.activiti.runtime.api.model.impl.APIDeploymentConverter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+@ExtendWith(MockitoExtension.class)
 public class ApplicationDeployedEventProducerTest {
 
     private ApplicationDeployedEventProducer producer;
@@ -59,7 +64,6 @@ public class ApplicationDeployedEventProducerTest {
 
     @BeforeEach
     public void setUp() {
-        initMocks(this);
         producer = new ApplicationDeployedEventProducer(repositoryService,
                 converter,
                 asList(firstListener, secondListener),
@@ -68,17 +72,34 @@ public class ApplicationDeployedEventProducerTest {
 
     @Test
     public void shouldPublishEventsWhenApplicationIsDeployed() {
+        ArgumentCaptor<ApplicationDeployedEvents> captorPublisher = startEventProducer();
+
+        assertThat(captorPublisher.getValue().getApplicationDeployedEvents().get(0).getEventType()).isEqualTo(APPLICATION_DEPLOYED);
+    }
+
+    @Test
+    public void shouldPublishEventsWhenApplicationIsRollback() {
+        producer.setAfterRollback(true);
+        ArgumentCaptor<ApplicationDeployedEvents> captorPublisher = startEventProducer();
+
+        assertThat(captorPublisher.getValue().getApplicationDeployedEvents().get(0).getEventType()).isEqualTo(APPLICATION_ROLLBACK);
+    }
+
+    private ArgumentCaptor<ApplicationDeployedEvents> startEventProducer() {
         DeploymentQuery deploymentQuery = mock(DeploymentQuery.class);
         given(repositoryService.createDeploymentQuery()).willReturn(deploymentQuery);
 
         List<Deployment> internalDeployment = asList(mock(Deployment.class),
-                mock(Deployment.class));
+                                                     mock(Deployment.class));
 
         given(deploymentQuery.deploymentName(APPLICATION_DEPLOYMENT_NAME)).willReturn(deploymentQuery);
+        given(deploymentQuery.latestVersion()).willReturn(deploymentQuery);
         given(deploymentQuery.list()).willReturn(internalDeployment);
 
-        List<org.activiti.api.process.model.Deployment> apiDeployments= asList(
-                buildAPIDeployment("id1", "SpringAutoDeployment"));
+        org.activiti.api.process.model.Deployment deployment = mock(org.activiti.api.process.model.Deployment.class);
+        when(deployment.getProjectReleaseVersion()).thenReturn("1");
+        when(deployment.getId()).thenReturn("123");
+        List<org.activiti.api.process.model.Deployment> apiDeployments = asList(deployment);
         given(converter.from(internalDeployment)).willReturn(apiDeployments);
 
         producer.start();
@@ -89,19 +110,21 @@ public class ApplicationDeployedEventProducerTest {
 
         List<ApplicationDeployedEvent> allValues = captor.getAllValues();
         assertThat(allValues)
-                .extracting(ApplicationDeployedEvent::getEntity)
-                .hasSize(2)
-                .containsOnly(apiDeployments.get(0));
+            .extracting(ApplicationDeployedEvent::getEntity)
+            .extracting(org.activiti.api.process.model.Deployment::getId)
+            .hasSize(2)
+            .containsOnly("123");
+
+        assertThat(allValues)
+            .extracting(ApplicationDeployedEvent::getEntity)
+            .extracting(org.activiti.api.process.model.Deployment::getProjectReleaseVersion)
+            .hasSize(2)
+            .containsOnly("2");
+
 
         ArgumentCaptor<ApplicationDeployedEvents> captorPublisher = ArgumentCaptor.forClass(ApplicationDeployedEvents.class);
         verify(eventPublisher).publishEvent(captorPublisher.capture());
-    }
-
-    private org.activiti.api.process.model.Deployment buildAPIDeployment(String deploymentId, String deploymentName) {
-        org.activiti.api.process.model.Deployment deployment = mock(org.activiti.api.process.model.Deployment.class);
-        given(deployment.getId()).willReturn(deploymentId);
-        given(deployment.getName()).willReturn(deploymentName);
-        return deployment;
+        return captorPublisher;
     }
 
 }

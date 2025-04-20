@@ -16,9 +16,6 @@
 
 package org.activiti.runtime.api.conf;
 
-import static java.util.Collections.emptyList;
-
-import java.util.List;
 import org.activiti.api.process.model.events.BPMNActivityCancelledEvent;
 import org.activiti.api.process.model.events.BPMNActivityCompletedEvent;
 import org.activiti.api.process.model.events.BPMNActivityStartedEvent;
@@ -45,14 +42,20 @@ import org.activiti.api.process.runtime.events.ProcessResumedEvent;
 import org.activiti.api.process.runtime.events.ProcessStartedEvent;
 import org.activiti.api.process.runtime.events.ProcessSuspendedEvent;
 import org.activiti.api.process.runtime.events.ProcessUpdatedEvent;
+import org.activiti.api.process.runtime.events.ProcessCandidateStarterUserAddedEvent;
+import org.activiti.api.process.runtime.events.ProcessCandidateStarterUserRemovedEvent;
+import org.activiti.api.process.runtime.events.ProcessCandidateStarterGroupAddedEvent;
+import org.activiti.api.process.runtime.events.ProcessCandidateStarterGroupRemovedEvent;
 import org.activiti.api.process.runtime.events.listener.BPMNElementEventListener;
 import org.activiti.api.process.runtime.events.listener.ProcessRuntimeEventListener;
 import org.activiti.api.runtime.shared.events.VariableEventListener;
+import org.activiti.api.runtime.shared.security.SecurityManager;
 import org.activiti.common.util.DateFormatterProvider;
 import org.activiti.core.common.spring.security.policies.ProcessSecurityPoliciesManager;
 import org.activiti.engine.ManagementService;
 import org.activiti.engine.RepositoryService;
 import org.activiti.engine.RuntimeService;
+import org.activiti.engine.TaskService;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.impl.event.EventSubscriptionPayloadMappingProvider;
 import org.activiti.runtime.api.conf.impl.ProcessRuntimeConfigurationImpl;
@@ -63,6 +66,10 @@ import org.activiti.runtime.api.event.impl.MessageSubscriptionConverter;
 import org.activiti.runtime.api.event.impl.StartMessageSubscriptionConverter;
 import org.activiti.runtime.api.event.impl.ToAPIProcessCreatedEventConverter;
 import org.activiti.runtime.api.event.impl.ToAPIProcessStartedEventConverter;
+import org.activiti.runtime.api.event.impl.ToAPIProcessCandidateStarterUserAddedEventConverter;
+import org.activiti.runtime.api.event.impl.ToAPIProcessCandidateStarterUserRemovedEventConverter;
+import org.activiti.runtime.api.event.impl.ToAPIProcessCandidateStarterGroupAddedEventConverter;
+import org.activiti.runtime.api.event.impl.ToAPIProcessCandidateStarterGroupRemovedEventConverter;
 import org.activiti.runtime.api.event.impl.ToActivityCancelledConverter;
 import org.activiti.runtime.api.event.impl.ToActivityCompletedConverter;
 import org.activiti.runtime.api.event.impl.ToActivityStartedConverter;
@@ -99,6 +106,10 @@ import org.activiti.runtime.api.event.internal.ProcessResumedEventListenerDelega
 import org.activiti.runtime.api.event.internal.ProcessStartedListenerDelegate;
 import org.activiti.runtime.api.event.internal.ProcessSuspendedListenerDelegate;
 import org.activiti.runtime.api.event.internal.ProcessUpdatedListenerDelegate;
+import org.activiti.runtime.api.event.internal.ProcessCandidateStarterUserAddedListenerDelegate;
+import org.activiti.runtime.api.event.internal.ProcessCandidateStarterUserRemovedListenerDelegate;
+import org.activiti.runtime.api.event.internal.ProcessCandidateStarterGroupAddedListenerDelegate;
+import org.activiti.runtime.api.event.internal.ProcessCandidateStarterGroupRemovedListenerDelegate;
 import org.activiti.runtime.api.event.internal.SequenceFlowTakenListenerDelegate;
 import org.activiti.runtime.api.event.internal.SignalReceivedListenerDelegate;
 import org.activiti.runtime.api.event.internal.TimerCancelledListenerDelegate;
@@ -109,13 +120,13 @@ import org.activiti.runtime.api.event.internal.TimerRetriesDecrementedListenerDe
 import org.activiti.runtime.api.event.internal.TimerScheduledListenerDelegate;
 import org.activiti.runtime.api.impl.EventSubscriptionVariablesMappingProvider;
 import org.activiti.runtime.api.impl.ExpressionResolver;
+import org.activiti.runtime.api.impl.ExtensionsVariablesMappingProvider;
 import org.activiti.runtime.api.impl.ProcessAdminRuntimeImpl;
 import org.activiti.runtime.api.impl.ProcessRuntimeImpl;
 import org.activiti.runtime.api.impl.ProcessVariablesPayloadValidator;
 import org.activiti.runtime.api.impl.RuntimeReceiveMessagePayloadEventListener;
 import org.activiti.runtime.api.impl.RuntimeSignalPayloadEventListener;
 import org.activiti.runtime.api.impl.VariableNameValidator;
-import org.activiti.runtime.api.impl.ExtensionsVariablesMappingProvider;
 import org.activiti.runtime.api.message.ReceiveMessagePayloadEventListener;
 import org.activiti.runtime.api.model.impl.APIDeploymentConverter;
 import org.activiti.runtime.api.model.impl.APIProcessDefinitionConverter;
@@ -123,6 +134,8 @@ import org.activiti.runtime.api.model.impl.APIProcessInstanceConverter;
 import org.activiti.runtime.api.model.impl.APIVariableInstanceConverter;
 import org.activiti.runtime.api.model.impl.ToActivityConverter;
 import org.activiti.runtime.api.model.impl.ToSignalConverter;
+import org.activiti.runtime.api.model.impl.APIProcessCandidateStarterUserConverter;
+import org.activiti.runtime.api.model.impl.APIProcessCandidateStarterGroupConverter;
 import org.activiti.runtime.api.signal.SignalPayloadEventListener;
 import org.activiti.spring.process.ProcessExtensionService;
 import org.activiti.spring.process.ProcessVariablesInitiator;
@@ -130,14 +143,18 @@ import org.activiti.spring.process.variable.VariableParsingService;
 import org.activiti.spring.process.variable.VariableValidationService;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-@Configuration
+import java.util.List;
+
+import static java.util.Collections.emptyList;
+
+@AutoConfiguration
 @AutoConfigureAfter(CommonRuntimeAutoConfiguration.class)
 public class ProcessRuntimeAutoConfiguration {
 
@@ -173,23 +190,27 @@ public class ProcessRuntimeAutoConfiguration {
     public ProcessRuntime processRuntime(RepositoryService repositoryService,
                                          APIProcessDefinitionConverter processDefinitionConverter,
                                          RuntimeService runtimeService,
+                                         TaskService taskService,
                                          ProcessSecurityPoliciesManager securityPoliciesManager,
                                          APIProcessInstanceConverter processInstanceConverter,
                                          APIVariableInstanceConverter variableInstanceConverter,
                                          APIDeploymentConverter apiDeploymentConverter,
                                          ProcessRuntimeConfiguration processRuntimeConfiguration,
                                          ApplicationEventPublisher eventPublisher,
-                                         ProcessVariablesPayloadValidator processVariablesValidator) {
+                                         ProcessVariablesPayloadValidator processVariablesValidator,
+                                         SecurityManager securityManager) {
         return new ProcessRuntimeImpl(repositoryService,
                 processDefinitionConverter,
                 runtimeService,
+                taskService,
                 securityPoliciesManager,
                 processInstanceConverter,
                 variableInstanceConverter,
                 apiDeploymentConverter,
                 processRuntimeConfiguration,
                 eventPublisher,
-                processVariablesValidator);
+                processVariablesValidator,
+                securityManager);
     }
 
     @Bean
@@ -199,11 +220,13 @@ public class ProcessRuntimeAutoConfiguration {
                                                    RuntimeService runtimeService,
                                                    APIProcessInstanceConverter processInstanceConverter,
                                                    ApplicationEventPublisher eventPublisher,
-                                                   ProcessVariablesPayloadValidator processVariablesValidator) {
+                                                   ProcessVariablesPayloadValidator processVariablesValidator,
+                                                   APIVariableInstanceConverter variableInstanceConverter) {
         return new ProcessAdminRuntimeImpl(repositoryService,
                 processDefinitionConverter,
                 runtimeService,
                 processInstanceConverter,
+                variableInstanceConverter,
                 eventPublisher,
                 processVariablesValidator
         );
@@ -232,11 +255,13 @@ public class ProcessRuntimeAutoConfiguration {
     public ProcessVariablesInitiator processVariablesInitiator(ProcessExtensionService processExtensionService,
                                                                VariableParsingService variableParsingService,
                                                                VariableValidationService variableValidationService,
-                                                               ExtensionsVariablesMappingProvider mappingProvider) {
+                                                               ExtensionsVariablesMappingProvider mappingProvider,
+                                                               ExpressionResolver expressionResolver) {
         return new ProcessVariablesInitiator(processExtensionService,
                                              variableParsingService,
                                              variableValidationService,
-                                             mappingProvider);
+                                             mappingProvider,
+                                             expressionResolver);
     }
 
     @Bean
@@ -572,4 +597,81 @@ public class ProcessRuntimeAutoConfiguration {
                                                                                                       new ToMessageSubscriptionCancelledConverter(converter)),
                                                      ActivitiEventType.ENTITY_DELETED);
     }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "registerProcessCandidateStarterUserAddedListenerDelegate")
+    public InitializingBean registerProcessCandidateStarterUserAddedListenerDelegate(RuntimeService runtimeService,
+                                                                        @Autowired(required = false) List<ProcessRuntimeEventListener<ProcessCandidateStarterUserAddedEvent>> listeners,
+                                                                        ToAPIProcessCandidateStarterUserAddedEventConverter processCandidateStarterUserAddedEventConverter) {
+        return () -> runtimeService.addEventListener(new ProcessCandidateStarterUserAddedListenerDelegate(getInitializedListeners(listeners),
+                processCandidateStarterUserAddedEventConverter),
+            ActivitiEventType.ENTITY_CREATED);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ToAPIProcessCandidateStarterUserAddedEventConverter processCandidateStarterUserAddedEventConverter(APIProcessCandidateStarterUserConverter processCandidateStarterUserConverter) {
+        return new ToAPIProcessCandidateStarterUserAddedEventConverter(processCandidateStarterUserConverter);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public APIProcessCandidateStarterUserConverter apiProcessCandidateStarterUserConverter() {
+        return new APIProcessCandidateStarterUserConverter();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "registerProcessCandidateStarterGroupAddedListenerDelegate")
+    public InitializingBean registerProcessCandidateStarterGroupAddedListenerDelegate(RuntimeService runtimeService,
+                                                                        @Autowired(required = false) List<ProcessRuntimeEventListener<ProcessCandidateStarterGroupAddedEvent>> listeners,
+                                                                        ToAPIProcessCandidateStarterGroupAddedEventConverter processCandidateStarterGroupAddedEventConverter) {
+        return () -> runtimeService.addEventListener(new ProcessCandidateStarterGroupAddedListenerDelegate(getInitializedListeners(listeners),
+                processCandidateStarterGroupAddedEventConverter),
+            ActivitiEventType.ENTITY_CREATED);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ToAPIProcessCandidateStarterGroupAddedEventConverter processCandidateStarterGroupAddedEventConverter(APIProcessCandidateStarterGroupConverter processCandidateStarterGroupConverter) {
+        return new ToAPIProcessCandidateStarterGroupAddedEventConverter(processCandidateStarterGroupConverter);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public APIProcessCandidateStarterGroupConverter apiProcessCandidateStarterGroupConverter() {
+        return new APIProcessCandidateStarterGroupConverter();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "registerProcessCandidateStarterUserRemovedListenerDelegate")
+    public InitializingBean registerProcessCandidateStarterUserRemovedListenerDelegate(RuntimeService runtimeService,
+                                                                                     @Autowired(required = false) List<ProcessRuntimeEventListener<ProcessCandidateStarterUserRemovedEvent>> listeners,
+                                                                                     ToAPIProcessCandidateStarterUserRemovedEventConverter processCandidateStarterUserRemovedEventConverter) {
+        return () -> runtimeService.addEventListener(new ProcessCandidateStarterUserRemovedListenerDelegate(getInitializedListeners(listeners),
+                processCandidateStarterUserRemovedEventConverter),
+            ActivitiEventType.ENTITY_DELETED);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ToAPIProcessCandidateStarterUserRemovedEventConverter processCandidateStarterUserRemovedEventConverter(APIProcessCandidateStarterUserConverter processCandidateStarterUserConverter) {
+        return new ToAPIProcessCandidateStarterUserRemovedEventConverter(processCandidateStarterUserConverter);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "registerProcessCandidateStarterGroupRemovedListenerDelegate")
+    public InitializingBean registerProcessCandidateStarterGroupRemovedListenerDelegate(RuntimeService runtimeService,
+                                                                                      @Autowired(required = false) List<ProcessRuntimeEventListener<ProcessCandidateStarterGroupRemovedEvent>> listeners,
+                                                                                      ToAPIProcessCandidateStarterGroupRemovedEventConverter processCandidateStarterGroupRemovedEventConverter) {
+        return () -> runtimeService.addEventListener(new ProcessCandidateStarterGroupRemovedListenerDelegate(getInitializedListeners(listeners),
+                processCandidateStarterGroupRemovedEventConverter),
+            ActivitiEventType.ENTITY_DELETED);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ToAPIProcessCandidateStarterGroupRemovedEventConverter processCandidateStarterGroupRemovedEventConverter(APIProcessCandidateStarterGroupConverter processCandidateStarterGroupConverter) {
+        return new ToAPIProcessCandidateStarterGroupRemovedEventConverter(processCandidateStarterGroupConverter);
+    }
+
 }

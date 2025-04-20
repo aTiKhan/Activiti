@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class Process extends BaseElement implements FlowElementsContainer, HasExecutionListeners {
+public class Process extends BaseElement implements FlowElementsContainer, HasExecutionListeners, AcceptUpdates {
 
   protected String name;
   protected boolean executable = true;
@@ -38,6 +38,8 @@ public class Process extends BaseElement implements FlowElementsContainer, HasEx
   protected List<String> candidateStarterGroups = new ArrayList<String>();
   protected List<EventListener> eventListeners = new ArrayList<EventListener>();
   protected Map<String, FlowElement> flowElementMap = new LinkedHashMap<String, FlowElement>();
+  protected boolean candidateStarterUsersDefined;
+  protected boolean candidateStarterGroupsDefined;
 
   // Added during process definition parsing
   protected FlowElement initialFlowElement;
@@ -274,6 +276,22 @@ public class Process extends BaseElement implements FlowElementsContainer, HasEx
     this.candidateStarterGroups = candidateStarterGroups;
   }
 
+  public boolean isCandidateStarterUsersDefined() {
+    return candidateStarterUsersDefined;
+  }
+
+  public void setCandidateStarterUsersDefined(boolean candidateStarterUsersDefined) {
+    this.candidateStarterUsersDefined = candidateStarterUsersDefined;
+  }
+
+  public boolean isCandidateStarterGroupsDefined() {
+    return candidateStarterGroupsDefined;
+  }
+
+  public void setCandidateStarterGroupsDefined(boolean candidateStarterGroupsDefined) {
+    this.candidateStarterGroupsDefined = candidateStarterGroupsDefined;
+  }
+
   public List<EventListener> getEventListeners() {
     return eventListeners;
   }
@@ -429,6 +447,11 @@ public class Process extends BaseElement implements FlowElementsContainer, HasEx
 
   public void setInitialFlowElement(FlowElement initialFlowElement) {
     this.initialFlowElement = initialFlowElement;
+  }
+
+  @Override
+  public void accept(ReferenceOverrider referenceOverrider) {
+    getFlowElements().forEach(flowElement -> flowElement.accept(referenceOverrider));
   }
 
 }

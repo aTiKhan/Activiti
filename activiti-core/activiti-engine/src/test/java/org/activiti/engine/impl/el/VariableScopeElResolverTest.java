@@ -22,12 +22,11 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.el.ELContext;
 import java.util.Arrays;
 import java.util.List;
-import javax.el.ELContext;
 import org.activiti.engine.delegate.VariableScope;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.activiti.engine.impl.context.Context;
@@ -39,10 +38,13 @@ import org.activiti.engine.impl.el.variable.VariableElResolver;
 import org.activiti.engine.impl.el.variable.VariableScopeItemELResolver;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
+import org.mockito.junit.MockitoJUnitRunner;
 
+@RunWith(MockitoJUnitRunner.class)
 public class VariableScopeElResolverTest {
 
     @Spy
@@ -64,7 +66,6 @@ public class VariableScopeElResolverTest {
 
     @Before
     public void setUp() throws Exception {
-        initMocks(this);
         doReturn(Arrays.asList(firstItemResolver, secondItemResolver, thirdItemResolver)).when(
             variableScopeElResolver).getVariableScopeItemELResolvers();
     }

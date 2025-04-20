@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -35,7 +36,6 @@ import org.activiti.validation.ProcessValidatorFactory;
 import org.activiti.validation.ValidationError;
 import org.activiti.validation.validator.Problems;
 import org.activiti.validation.validator.ValidatorSetNames;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -111,7 +111,9 @@ public class DefaultProcessValidatorTest {
     // Sequence flow
     problems = findErrors(allErrors, setName, Problems.SEQ_FLOW_INVALID_SRC, 1);
     assertCommonProblemFieldForActivity(problems.get(0));
-    problems = findErrors(allErrors, setName, Problems.SEQ_FLOW_INVALID_TARGET, 2);
+    problems = findErrors(allErrors, setName, Problems.SEQ_FLOW_INVALID_TARGET, 1);
+    assertCommonProblemFieldForActivity(problems.get(0));
+    problems = findErrors(allErrors, setName, Problems.SEQ_FLOW_INVALID_TARGET_DIFFERENT_SCOPE, 1);
     assertCommonProblemFieldForActivity(problems.get(0));
 
     // User task
@@ -286,45 +288,40 @@ public class DefaultProcessValidatorTest {
         assertThat(allErrors.get(0).getProblem()).isEqualTo("activiti-di-invalid-reference");
     }
 
-  /*
-   * Test for https://jira.codehaus.org/browse/ACT-2071:
-   *
-   * If all processes in a deployment are not executable, throw an exception as this doesn't make sense to do.
-   */
   @Test
-  public void testAllNonExecutableProcesses() {
+  public void should_raiseAValidationError_when_noProcessIsExecutable() {
     BpmnModel bpmnModel = new BpmnModel();
     for (int i = 0; i < 5; i++) {
-      org.activiti.bpmn.model.Process process = TestProcessUtil.createOneTaskProcess();
-      process.setExecutable(false);
-      bpmnModel.addProcess(process);
+      bpmnModel.addProcess(createNonExecutableProcess());
     }
 
     List<ValidationError> errors = processValidator.validate(bpmnModel);
     assertThat(errors).hasSize(1);
   }
 
-  /*
-   * Test for https://jira.codehaus.org/browse/ACT-2071:
-   *
-   * If there is at least one process definition which is executable, and the deployment contains other process definitions which are not executable, then add a warning for those non executable
-   * process definitions
-   */
-  @Test
-  public void testNonExecutableProcessDefinitionWarning() {
+    @Test
+    public void should_raiseAnError_when_twoProcessesHasSameIdInTheBPMNModel() {
+        BpmnModel bpmnModel = new BpmnModel();
+
+        String sameIdTest = UUID.randomUUID().toString();
+        bpmnModel.addProcess(TestProcessUtil.createOneTaskProcessWithId(sameIdTest));
+        bpmnModel.addProcess(TestProcessUtil.createOneTaskProcessWithId(sameIdTest));
+
+        List<ValidationError> errors = processValidator.validate(bpmnModel);
+        assertThat(errors).hasSize(1);
+        assertThat(errors.get(0).getProblem()).isEqualTo("activiti-process-definition-id-duplicated");
+  }
+
+    @Test
+  public void should_addWarningsForAllNonExecutableProcesses_WhenAtLeastOneProcessIsExecutable() {
     BpmnModel bpmnModel = new BpmnModel();
 
-    // 3 non-executables
     for (int i = 0; i < 3; i++) {
-      org.activiti.bpmn.model.Process process = TestProcessUtil.createOneTaskProcess();
-      process.setExecutable(false);
-      bpmnModel.addProcess(process);
+        bpmnModel.addProcess(createNonExecutableProcess());
     }
 
-    // 1 executables
-    org.activiti.bpmn.model.Process process = TestProcessUtil.createOneTaskProcess();
-    process.setExecutable(true);
-    bpmnModel.addProcess(process);
+    org.activiti.bpmn.model.Process executableProcess = TestProcessUtil.createOneTaskProcess();
+    bpmnModel.addProcess(executableProcess);
 
     List<ValidationError> errors = processValidator.validate(bpmnModel);
     assertThat(errors).hasSize(3);
@@ -336,7 +333,13 @@ public class DefaultProcessValidatorTest {
     }
   }
 
-  private void assertCommonProblemFieldForActivity(ValidationError error) {
+    private org.activiti.bpmn.model.Process createNonExecutableProcess() {
+        org.activiti.bpmn.model.Process process = TestProcessUtil.createOneTaskProcess();
+        process.setExecutable(false);
+        return process;
+    }
+
+    private void assertCommonProblemFieldForActivity(ValidationError error) {
     assertProcessElementError(error);
 
     assertThat(error.getActivityId()).isNotNull();
@@ -361,21 +364,21 @@ public class DefaultProcessValidatorTest {
   }
 
   private List<ValidationError> findErrors(List<ValidationError> errors, String validatorSetName,
-      String problemName, int expectedNrOfProblems) {
-    List<ValidationError> results = findErrors(errors, validatorSetName, problemName);
+      String problemKey, int expectedNrOfProblems) {
+    List<ValidationError> results = findErrors(errors, validatorSetName, problemKey);
     assertThat(results).hasSize(expectedNrOfProblems);
     for (ValidationError result : results) {
       assertThat(result.getValidatorSetName()).isEqualTo(validatorSetName);
-      assertThat(result.getProblem()).isEqualTo(problemName);
+      assertThat(result.getKey()).isEqualTo(problemKey);
     }
     return results;
   }
 
   private List<ValidationError> findErrors(List<ValidationError> errors, String validatorSetName,
-      String problemName) {
+      String problemKey) {
     List<ValidationError> results = new ArrayList<>();
     for (ValidationError error : errors) {
-      if (error.getValidatorSetName().equals(validatorSetName) && error.getProblem().equals(problemName)) {
+      if (error.getValidatorSetName().equals(validatorSetName) && error.getKey().equals(problemKey)) {
         results.add(error);
       }
     }

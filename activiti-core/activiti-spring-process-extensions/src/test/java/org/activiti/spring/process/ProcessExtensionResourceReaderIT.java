@@ -15,11 +15,7 @@
  */
 package org.activiti.spring.process;
 
-import static org.activiti.spring.process.model.TemplateDefinition.TemplateType.FILE;
-import static org.activiti.spring.process.model.TemplateDefinition.TemplateType.VARIABLE;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.InputStream;
+import org.activiti.core.common.model.connector.VariableDefinition;
 import org.activiti.engine.RepositoryService;
 import org.activiti.spring.process.model.ProcessExtensionModel;
 import org.activiti.spring.process.model.TaskTemplateDefinition;
@@ -28,14 +24,23 @@ import org.activiti.spring.process.model.TemplatesDefinition;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+import java.io.InputStream;
+
+import static org.activiti.spring.process.model.TemplateDefinition.TemplateType.FILE;
+import static org.activiti.spring.process.model.TemplateDefinition.TemplateType.VARIABLE;
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.NONE,
+    properties = "spring.main.banner-mode=off"
+)
 public class ProcessExtensionResourceReaderIT {
 
     private static String FROM = "no-reply@activiti.org";
 
-    @MockBean
+    @MockitoBean
     private RepositoryService repositoryService;
 
     @Autowired
@@ -165,4 +170,58 @@ public class ProcessExtensionResourceReaderIT {
                 );
         }
     }
+
+    @Test
+    public void shouldReadAnalyticsExtensionFromJsonFile() throws Exception {
+        try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
+                                             .getResourceAsStream("processes/initial-vars-extensions.json")) {
+            ProcessExtensionModel processExtensionModel = reader.read(inputStream);
+            assertThat(processExtensionModel).isNotNull();
+            assertThat(processExtensionModel.getId()).isEqualTo("initialVarsProcess");
+            assertThat(
+                processExtensionModel.getExtensions("Process_initialVarsProcess").getProperties())
+                    .extracting(stringVariableDefinitionMap -> stringVariableDefinitionMap.get("379dc1a1-481d-4617-a027-ef39fdadf6667"))
+                    .extracting(VariableDefinition::getName, VariableDefinition::isAnalytics)
+                    .containsOnly("trackedId", true);
+
+            assertThat(
+                processExtensionModel.getExtensions("Process_initialVarsProcess").getProperties())
+                    .extracting(stringVariableDefinitionMap -> stringVariableDefinitionMap.get("379dc1a1-481d-4617-a027-ef39fdadf6668"))
+                    .extracting(VariableDefinition::getName, VariableDefinition::isAnalytics)
+                    .containsOnly("notTrackedId", false);
+        }
+    }
+
+    @Test
+    void should_read_propertyEphemeral_fromExtensions_when_present() throws Exception {
+        try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
+            .getResourceAsStream("processes/vars-extensions.json")) {
+            ProcessExtensionModel processExtensionModel = reader.read(inputStream);
+            assertThat(processExtensionModel).isNotNull();
+            assertThat(processExtensionModel.getId()).isEqualTo("varsProcess");
+            assertThat(
+                processExtensionModel.getExtensions("Process_varsProcess").getProperties())
+                .extracting(stringVariableDefinitionMap -> stringVariableDefinitionMap.get("ea640de8-4683-4298-84a5-1e2d59c7219a"))
+                .extracting(VariableDefinition::getName, VariableDefinition::isEphemeral)
+                .containsOnly("testVariable", true);
+
+        }
+    }
+
+    @Test
+    void shouldBeFalse_propertyEphemeral_when_notPresent() throws Exception {
+        try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
+            .getResourceAsStream("processes/vars-extensions.json")) {
+            ProcessExtensionModel processExtensionModel = reader.read(inputStream);
+            assertThat(processExtensionModel).isNotNull();
+            assertThat(processExtensionModel.getId()).isEqualTo("varsProcess");
+            assertThat(
+                processExtensionModel.getExtensions("Process_varsProcess").getProperties())
+                .extracting(stringVariableDefinitionMap -> stringVariableDefinitionMap.get("f04b8b72-26ca-411e-8b2b-729a059bb06a"))
+                .extracting(VariableDefinition::getName, VariableDefinition::isEphemeral)
+                .containsOnly("testVariable2", false);
+
+        }
+    }
+
 }
